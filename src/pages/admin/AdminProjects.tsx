@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../firebase/config';
+import axios from 'axios';
+import { db } from '../../firebase/config';
 import { Plus, Edit2, Trash2, X, UploadCloud, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -41,36 +41,41 @@ export default function AdminProjects() {
     if (!files) return;
     setIsUploading(true);
     
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      alert("Please configure Cloudinary environment variables (VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET) first.");
+      setIsUploading(false);
+      return;
+    }
+
     const uploadedUrls: string[] = [];
     try {
       for(let i = 0; i < files.length; i++){
         const file = files[i];
-        const storageRef = ref(storage, `projects/${Date.now()}_${file.name}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', uploadPreset);
+
+        const response = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          formData
+        );
         
-        await new Promise((resolve, reject) => {
-          uploadTask.on('state_changed', 
-            null, 
-            (error) => reject(error), 
-            async () => {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              uploadedUrls.push(downloadURL);
-              resolve(null);
-            }
-          );
-        });
+        uploadedUrls.push(response.data.secure_url);
       }
-      setImages(prev => [...prev, ...uploadedUrls]);
+      setImages((prev: string[]) => [...prev, ...uploadedUrls]);
     } catch(err: any) {
       console.error(err);
-      alert("Error uploading image: " + err.message);
+      alert("Error uploading to Cloudinary: " + (err.response?.data?.error?.message || err.message));
     } finally {
       setIsUploading(false);
     }
   };
 
   const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages((prev: string[]) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

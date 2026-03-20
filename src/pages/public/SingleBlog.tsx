@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, ChevronLeft, ArrowRight } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { ImageCarousel } from '../../components/ImageCarousel';
+import { PageSkeleton } from '../../components/Skeleton';
 
 const SingleBlog = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,25 +50,14 @@ const SingleBlog = () => {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto animate-pulse flex space-x-12">
-        <div className="w-3/4 space-y-6">
-          <div className="h-12 bg-gray-100 rounded-xl w-2/3"></div>
-          <div className="h-64 bg-gray-100 rounded-2xl w-full"></div>
-        </div>
-        <div className="w-1/4 space-y-4">
-          <div className="h-8 bg-gray-100 rounded border-b pb-4"></div>
-          <div className="h-24 bg-gray-100 rounded-xl border"></div>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (!blog) {
     return (
       <div className="text-center py-24 space-y-4">
-        <h1 className="text-3xl font-bold">Blog post not found.</h1>
-        <Link to="/blog" className="text-blue-600 hover:text-blue-800 inline-flex items-center space-x-2">
+        <h1 className="text-3xl font-bold dark:text-white">Blog post not found.</h1>
+        <Link to="/blog" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 inline-flex items-center space-x-2">
           <ChevronLeft className="w-4 h-4" /> <span>Back to Blogs</span>
         </Link>
       </div>
@@ -85,7 +75,7 @@ const SingleBlog = () => {
       </Helmet>
 
       <div className="mb-8">
-        <Link to="/blog" className="text-gray-500 hover:text-gray-900 inline-flex items-center space-x-2 transition-colors font-medium">
+        <Link to="/blog" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white inline-flex items-center space-x-2 transition-colors font-medium">
           <ChevronLeft className="w-4 h-4" /> <span>Back to all posts</span>
         </Link>
       </div>
@@ -97,11 +87,11 @@ const SingleBlog = () => {
           className="lg:col-span-3 space-y-8"
         >
           <div className="space-y-4">
-            <div className="flex items-center space-x-4 text-sm text-gray-500 font-medium">
+            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
               <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{blog.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
               <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">{blog.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">{blog.title}</h1>
           </div>
 
           {/* Media Carousel / Hero */}
@@ -109,7 +99,7 @@ const SingleBlog = () => {
             <ImageCarousel images={blog.images?.length > 0 ? blog.images : [blog.coverImage]} />
           )}
 
-          <div className="prose prose-lg text-gray-700 max-w-none leading-relaxed">
+          <div className="prose prose-lg text-gray-700 dark:text-gray-300 max-w-none leading-relaxed">
             {/* If using a Markdown renderer, you'd wrap blog.content here. For now, simple paragraphs */}
             {blog.content?.split('\n').map((paragraph: string, i: number) => (
               paragraph.trim() ? <p key={i} className="mb-6">{paragraph}</p> : null
@@ -122,30 +112,30 @@ const SingleBlog = () => {
           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
           className="lg:col-span-1 space-y-8"
         >
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm sticky top-24">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center space-x-2">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm sticky top-24">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-2">
                <span>Recent Posts</span>
             </h3>
             
             <div className="space-y-6">
-              {recentBlogs.length === 0 && <p className="text-gray-500 text-sm">No other posts published yet.</p>}
+              {recentBlogs.length === 0 && <p className="text-gray-500 dark:text-gray-400 text-sm">No other posts published yet.</p>}
               
               {recentBlogs.map(rb => (
                 <Link to={`/blog/${rb.id}`} key={rb.id} className="group block space-y-2">
-                  <h4 className="font-bold text-gray-800 leading-snug group-hover:text-blue-600 transition-colors">{rb.title}</h4>
-                  <p className="text-sm text-gray-500 line-clamp-2">{rb.excerpt}</p>
-                  <div className="flex items-center space-x-1 text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                  <h4 className="font-bold text-gray-800 dark:text-gray-200 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{rb.title}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{rb.excerpt}</p>
+                  <div className="flex items-center space-x-1 text-xs font-semibold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
                     <span>Read</span> <ArrowRight className="w-3 h-3" />
                   </div>
                 </Link>
               ))}
             </div>
-
-            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest text-center">About Me</h3>
-              <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto"></div>
-              <p className="text-sm text-center text-gray-600">I build elegant digital experiences with scalable robust backend architectures.</p>
-              <Link to="/about" className="block text-center text-sm font-bold text-blue-600 hover:text-blue-800">Learn more</Link>
+ 
+            <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 space-y-4">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest text-center">About Me</h3>
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto"></div>
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400">I build elegant digital experiences with scalable robust backend architectures.</p>
+              <Link to="/about" className="block text-center text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">Learn more</Link>
             </div>
           </div>
         </motion.aside>

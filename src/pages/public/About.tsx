@@ -22,8 +22,8 @@ const About = () => {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">About Me</h1>
-        <div className="prose prose-lg text-gray-600">
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">About Me</h1>
+        <div className="prose prose-lg text-gray-600 dark:text-gray-400">
           <p className="leading-relaxed">
             I'm a passionate full-stack developer dedicated to building elegant, efficient, and scalable web applications. 
             With a strong foundation in modern JavaScript ecosystems, I focus on creating seamless user experiences powered by robust backend architectures.
@@ -38,17 +38,17 @@ const About = () => {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
         className="space-y-8"
       >
-        <h2 className="text-2xl font-bold text-gray-900">What I Do</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">What I Do</h2>
         <div className="grid md:grid-cols-2 gap-6">
           {skills.map((skill, index) => {
             const Icon = skill.icon;
             return (
-              <div key={skill.name} className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4">
+              <div key={skill.name} className="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md dark:hover:shadow-gray-800/10 transition">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{skill.name}</h3>
-                <p className="text-gray-600">{skill.desc}</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{skill.name}</h3>
+                <p className="text-gray-600 dark:text-gray-400">{skill.desc}</p>
               </div>
             );
           })}

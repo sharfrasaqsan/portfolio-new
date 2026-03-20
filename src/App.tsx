@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -24,33 +25,35 @@ import AdminBlogs from './pages/admin/AdminBlogs';
 const App = () => {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <Router>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin"></div></div>}>
-            <Routes>
-              {/* Public Routes */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/projects/:id" element={<SingleProject />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:id" element={<SingleBlog />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/admin/login" element={<Login />} />
-              </Route>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 flex-col space-y-4"><div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-950 animate-spin"></div><p className="text-gray-500 font-medium">Loading Portfolio...</p></div>}>
+              <Routes>
+                {/* Public Routes */}
+                <Route element={<PublicLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:id" element={<SingleProject />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:id" element={<SingleBlog />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/admin/login" element={<Login />} />
+                </Route>
 
-          {/* Admin Routes */}
-          <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/projects" element={<AdminProjects />} />
-            <Route path="/admin/blogs" element={<AdminBlogs />} />
-          </Route>
-            </Routes>
-          </Suspense>
-        </Router>
-      </AuthProvider>
+                {/* Admin Routes */}
+                <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                  <Route path="/admin" element={<Dashboard />} />
+                  <Route path="/admin/dashboard" element={<Dashboard />} />
+                  <Route path="/admin/projects" element={<AdminProjects />} />
+                  <Route path="/admin/blogs" element={<AdminBlogs />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
     </HelmetProvider>
   );
 };
