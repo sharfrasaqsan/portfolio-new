@@ -124,6 +124,13 @@ const SingleProject = () => {
           {/* Sidebar Metrics */}
           <div className="md:col-span-1 space-y-6">
              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-6 sticky top-24">
+                {project.type && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center space-x-1"><Briefcase className="w-3 h-3" /> <span>Project Type</span></h3>
+                    <p className="font-medium text-gray-900 dark:text-white">{project.type}</p>
+                  </div>
+                )}
+
                 {project.timeToBuild && (
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center space-x-1"><Calendar className="w-3 h-3" /> <span>Time to Build</span></h3>

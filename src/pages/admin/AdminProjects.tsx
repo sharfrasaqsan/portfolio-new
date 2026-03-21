@@ -24,6 +24,7 @@ export default function AdminProjects() {
   const [liveUrl, setLiveUrl] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [featured, setFeatured] = useState(false);
+  const [type, setType] = useState('Individual Project');
   
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -82,7 +83,7 @@ export default function AdminProjects() {
     e.preventDefault();
     try {
       const payload = {
-        title, shortDesc, fullDesc, whyBuilt, lessonLearned, status, timeToBuild, category, images, featured,
+        title, shortDesc, fullDesc, whyBuilt, lessonLearned, status, timeToBuild, category, images, featured, type,
         image: images.length > 0 ? images[0] : '', // backwards compatibility
         techStack: techStack.split(',').map(s => s.trim()).filter(Boolean), 
         githubUrl, liveUrl,
@@ -108,6 +109,7 @@ export default function AdminProjects() {
     // Support legacy 'image' string or new 'images' array
     setImages(p.images ? p.images : (p.image ? [p.image] : []));
     setFeatured(p.featured || false);
+    setType(p.type || 'Individual Project');
     setTechStack(p.techStack?.join(', ') || ''); setGithubUrl(p.githubUrl || ''); setLiveUrl(p.liveUrl || '');
     setIsModalOpen(true);
   };
@@ -120,7 +122,7 @@ export default function AdminProjects() {
 
   const closeModal = () => {
     setEditId(null); setTitle(''); setShortDesc(''); setFullDesc(''); setWhyBuilt(''); setLessonLearned('');
-    setStatus('In Progress'); setTimeToBuild(''); setCategory('Web App'); setImages([]); setFeatured(false);
+    setStatus('In Progress'); setTimeToBuild(''); setCategory('Web App'); setImages([]); setFeatured(false); setType('Individual Project');
     setTechStack(''); setGithubUrl(''); setLiveUrl(''); setIsModalOpen(false);
   };
 
@@ -147,9 +149,12 @@ export default function AdminProjects() {
             <div className="p-5 flex-1 space-y-3">
               <div className="flex justify-between items-start">
                 <h3 className="font-bold text-lg">{p.title}</h3>
-                <span className={`text-xs px-2 py-1 rounded-full ${p.status === 'Live' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {p.status}
-                </span>
+                <div className="flex flex-col items-end space-y-1">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === 'Live' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {p.status}
+                  </span>
+                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{p.type || 'Individual'}</span>
+                </div>
               </div>
               <p className="text-sm text-gray-500 line-clamp-2">{p.shortDesc}</p>
             </div>
@@ -189,6 +194,17 @@ export default function AdminProjects() {
                       </select>
                     </div>
                     <div><label className="text-sm font-medium mb-1 block">Building Time</label><input value={timeToBuild} onChange={(e)=>setTimeToBuild(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50" placeholder="e.g. 2 weeks" /></div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Project Type</label>
+                      <select value={type} onChange={(e)=>setType(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50">
+                        <option>Individual Project</option>
+                        <option>Freelance Project</option>
+                        <option>Company Project</option>
+                        <option>Collaborative</option>
+                        <option>Open Source</option>
+                      </select>
+                    </div>
                     
                     <div className="md:col-span-2"><label className="text-sm font-medium mb-1 block">Short Description</label><textarea required rows={2} value={shortDesc} onChange={(e)=>setShortDesc(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50" /></div>
                     
