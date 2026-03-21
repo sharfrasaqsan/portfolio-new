@@ -16,7 +16,7 @@ const Home = () => {
       try {
         const q = query(
           collection(db, "projects"),
-          where("status", "==", "Live"),
+          where("featured", "==", true),
           limit(3),
         );
         const snap = await getDocs(q);
