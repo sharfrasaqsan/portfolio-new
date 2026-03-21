@@ -17,7 +17,7 @@ const Home = () => {
         const q = query(
           collection(db, "projects"),
           where("featured", "==", true),
-          limit(3),
+          limit(6),
         );
         const snap = await getDocs(q);
         setFeaturedProjects(snap.docs.map((d) => ({ id: d.id, ...d.data() })));

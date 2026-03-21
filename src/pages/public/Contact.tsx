@@ -27,7 +27,7 @@ const Contact = () => {
         from_name: formData.name,
         from_email: formData.email,
         message: formData.message,
-        to_name: 'Alex Walker', // You can change this or make it dynamic
+        to_name: 'Mohamed Sharfras', // You can change this or make it dynamic
       };
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
@@ -48,8 +48,8 @@ const Contact = () => {
   return (
     <div className="max-w-6xl mx-auto py-12">
       <Helmet>
-        <title>Contact | Alex Walker</title>
-        <meta name="description" content="Reach out to me for business inquiries, projects, or just to say hi!" />
+        <title>Contact | Mohamed Sharfras</title>
+        <meta name="description" content="Reach out to Mohamed Sharfras for web development projects, WordPress/Magento support, or SEO inquiries." />
       </Helmet>
 
       <div className="grid md:grid-cols-2 gap-16">
@@ -68,7 +68,7 @@ const Contact = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Me at</p>
-                <a href="mailto:hello@example.com" className="text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">hello@example.com</a>
+                <a href="mailto:sharfirasm@gmail.com" className="text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">sharfirasm@gmail.com</a>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -77,7 +77,7 @@ const Contact = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Location</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">San Francisco, CA</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">Colombo, Sri Lanka</p>
               </div>
             </div>
           </div>

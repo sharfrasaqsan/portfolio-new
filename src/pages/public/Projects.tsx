@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Github, Filter, Briefcase, ArrowRight } from 'lucide-react';
@@ -11,6 +11,8 @@ const Projects = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const projectsPerPage = 9;
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -32,11 +34,27 @@ const Projects = () => {
 
   const statuses = ['All', 'Live', 'In Progress', 'Archived'];
   const filteredProjects = filter === 'All' ? projects : projects.filter(p => p.status === filter);
+  
+  // Reset page to 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+  const indexOfLastProject = currentPage * projectsPerPage;
+  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
+  const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="space-y-12">
       <Helmet>
-        <title>Portfolio Projects | Alex Walker</title>
+        <title>Portfolio Projects | Mohamed Sharfras</title>
         <meta name="description" content="Explore my portfolio of web applications, open-source repositories, and freelance programming work." />
       </Helmet>
 
@@ -66,8 +84,8 @@ const Projects = () => {
         </div>
       ) : (
         <motion.div layout className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence>
-            {filteredProjects.map((p, i) => (
+          <AnimatePresence mode="popLayout">
+            {currentProjects.map((p) => (
               <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -125,6 +143,25 @@ const Projects = () => {
             ))}
           </AnimatePresence>
         </motion.div>
+      )}
+
+      {/* Numerical Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 pt-12">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+            <button
+              key={number}
+              onClick={() => paginate(number)}
+              className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                currentPage === number
+                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-950 shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {number}
+            </button>
+          ))}
+        </div>
       )}
 
       {!loading && filteredProjects.length === 0 && (
