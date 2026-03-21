@@ -94,7 +94,7 @@ const SingleBlog = () => {
   return (
     <div className="relative">
       <Helmet>
-        <title>{blog ? `${blog.title}` : "Loading Blog... | Mohamed Sharfiras"}</title>
+        <title>{blog ? `${blog.title}` : "Loading Blog..."}</title>
         {blog && (
           <>
             <meta
