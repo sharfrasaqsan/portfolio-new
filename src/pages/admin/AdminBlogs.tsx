@@ -15,6 +15,7 @@ export default function AdminBlogs() {
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
   const [status, setStatus] = useState('Draft');
+  const [category, setCategory] = useState('Technology');
   const [images, setImages] = useState<string[]>([]);
   
   // Upload State
@@ -75,7 +76,7 @@ export default function AdminBlogs() {
     e.preventDefault();
     try {
       const payload = {
-        title, excerpt, content, status, images,
+        title, excerpt, content, status, images, category,
         coverImage: images.length > 0 ? images[0] : '', // maintain compatibility
         updatedAt: serverTimestamp()
       };
@@ -95,6 +96,7 @@ export default function AdminBlogs() {
     setEditId(b.id); setTitle(b.title); setExcerpt(b.excerpt || ''); setContent(b.content || '');
     setStatus(b.status || 'Draft'); 
     setImages(b.images ? b.images : (b.coverImage ? [b.coverImage] : []));
+    setCategory(b.category || 'Technology');
     setIsModalOpen(true);
   };
 
@@ -105,9 +107,30 @@ export default function AdminBlogs() {
   };
 
   const closeModal = () => {
-    setEditId(null); setTitle(''); setExcerpt(''); setContent(''); setStatus('Draft'); 
+    setEditId(null); setTitle(''); setExcerpt(''); setContent(''); setStatus('Draft'); setCategory('Technology');
     setImages([]); setIsModalOpen(false);
   };
+
+   const insertMarkdown = (prefix: string, suffix: string = '') => {
+     const textarea = document.getElementById('blogContent') as HTMLTextAreaElement;
+     if (!textarea) return;
+
+     const start = textarea.selectionStart;
+     const end = textarea.selectionEnd;
+     const text = textarea.value;
+     const before = text.substring(0, start);
+     const after = text.substring(end, text.length);
+     const selection = text.substring(start, end);
+
+     const newContent = before + prefix + selection + suffix + after;
+     setContent(newContent);
+     
+     // Set focus back and selection
+     setTimeout(() => {
+       textarea.focus();
+       textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+     }, 0);
+   };
 
   return (
     <div className="space-y-6 flex-1 w-full mx-auto max-w-7xl">
@@ -169,10 +192,14 @@ export default function AdminBlogs() {
 
               <div className="p-6 overflow-y-auto">
                 <form id="blogForm" onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1">
                       <label className="text-sm font-medium mb-1 block">Title</label>
                       <input required value={title} onChange={(e)=>setTitle(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Category</label>
+                      <input required value={category} onChange={(e)=>setCategory(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50" />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-1 block">Status</label>
@@ -206,12 +233,22 @@ export default function AdminBlogs() {
                     <label className="text-sm font-medium mb-1 block">Excerpt</label>
                     <input required value={excerpt} onChange={(e)=>setExcerpt(e.target.value)} className="w-full border rounded-lg p-3 bg-gray-50" />
                   </div>
-                  <div>
+                   <div>
                     <label className="text-sm font-medium mb-1 block flex items-center justify-between">
                        <span>Content</span>
                        <span className="text-xs text-gray-500 font-normal">Markdown is fully supported.</span>
                     </label>
-                    <textarea required rows={12} value={content} onChange={(e)=>setContent(e.target.value)} className="w-full border rounded-lg p-4 bg-gray-50 font-mono text-sm leading-relaxed" placeholder="# Write your amazing post here..." />
+                    <div className="border rounded-t-lg bg-gray-100 dark:bg-gray-800 p-2 flex flex-wrap gap-2 border-b-0">
+                      <button type="button" onClick={() => insertMarkdown('## ')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs font-bold border shadow-sm">H2</button>
+                      <button type="button" onClick={() => insertMarkdown('### ')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs font-bold border shadow-sm">H3</button>
+                      <button type="button" onClick={() => insertMarkdown('**', '**')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs font-bold border shadow-sm">Bold</button>
+                      <button type="button" onClick={() => insertMarkdown('*', '*')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs italic border shadow-sm">Italic</button>
+                      <button type="button" onClick={() => insertMarkdown('- ')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">List</button>
+                      <button type="button" onClick={() => insertMarkdown('[', '](url)')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Link</button>
+                      <button type="button" onClick={() => insertMarkdown('> ')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Quote</button>
+                      <button type="button" onClick={() => insertMarkdown('```\n', '\n```')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Code</button>
+                    </div>
+                    <textarea id="blogContent" required rows={12} value={content} onChange={(e)=>setContent(e.target.value)} className="w-full border rounded-b-lg p-4 bg-gray-50 font-mono text-sm leading-relaxed outline-none focus:ring-1 focus:ring-blue-500" placeholder="# Write your amazing post here..." />
                   </div>
                 </form>
               </div>

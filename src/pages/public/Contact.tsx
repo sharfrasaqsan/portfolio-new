@@ -27,7 +27,7 @@ const Contact = () => {
         from_name: formData.name,
         from_email: formData.email,
         message: formData.message,
-        to_name: 'Mohamed Sharfras', // You can change this or make it dynamic
+        to_name: 'Mohamed Sharfiras', // You can change this or make it dynamic
       };
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
@@ -48,8 +48,8 @@ const Contact = () => {
   return (
     <div className="max-w-6xl mx-auto py-12">
       <Helmet>
-        <title>Contact | Mohamed Sharfras</title>
-        <meta name="description" content="Reach out to Mohamed Sharfras for web development projects, WordPress/Magento support, or SEO inquiries." />
+        <title>Contact | Mohamed Sharfiras</title>
+        <meta name="description" content="Reach out to Mohamed Sharfiras for web development projects, WordPress/Magento support, or SEO inquiries." />
       </Helmet>
 
       <div className="grid md:grid-cols-2 gap-16">
@@ -68,7 +68,7 @@ const Contact = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Me at</p>
-                <a href="mailto:sharfirasm@gmail.com" className="text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">sharfirasm@gmail.com</a>
+                <a href="mailto:sharfrasaqsan@gmail.com" className="text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">sharfrasaqsan@gmail.com</a>
               </div>
             </div>
             <div className="flex items-center space-x-4">

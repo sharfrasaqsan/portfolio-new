@@ -54,7 +54,7 @@ const Projects = () => {
   return (
     <div className="space-y-12">
       <Helmet>
-        <title>Portfolio Projects | Mohamed Sharfras</title>
+        <title>Portfolio Projects | Mohamed Sharfiras</title>
         <meta name="description" content="Explore my portfolio of web applications, open-source repositories, and freelance programming work." />
       </Helmet>
 

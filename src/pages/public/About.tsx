@@ -29,10 +29,10 @@ const About = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-16">
       <Helmet>
-        <title>About Me | Mohamed Sharfras</title>
+        <title>About Me | Mohamed Sharfiras</title>
         <meta
           name="description"
-          content="Learn more about Mohamed Sharfras, a web developer specializing in React, WordPress, Magento, Shopify, SEO, and GoHighLevel automation."
+          content="Learn more about Mohamed Sharfiras, a web developer specializing in React, WordPress, Magento, Shopify, SEO, and GoHighLevel automation."
         />
       </Helmet>
 

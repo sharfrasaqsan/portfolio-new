@@ -29,8 +29,8 @@ const Blog = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-12">
       <Helmet>
-        <title>Blog | Alex Walker</title>
-        <meta name="description" content="Technical blog covering web development, software engineering, and tutorials." />
+        <title>Blog | Mohamed Sharfiras</title>
+        <meta name="description" content="Technical blog by Mohamed Sharfiras covering web development, software engineering, and tutorials." />
       </Helmet>
       
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -55,8 +55,13 @@ const Blog = () => {
               <div className="absolute top-0 left-0 w-2 h-full bg-transparent group-hover:bg-blue-600 transition-colors"></div>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{new Date().toLocaleDateString()}</span></span>
+                  <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{b.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
                   <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
+                  {b.category && (
+                    <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
+                      {b.category}
+                    </span>
+                  )}
                 </div>
                 <Link to={`/blog/${b.id}`}>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">{b.title}</h2>

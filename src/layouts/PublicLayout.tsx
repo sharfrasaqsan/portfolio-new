@@ -13,7 +13,7 @@ export const PublicLayout = () => {
               to="/"
               className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400"
             >
-              Mohamed Sharfras
+              Mohamed Sharfiras
             </Link>
             <div className="hidden md:flex space-x-8 items-center">
               <Link
@@ -109,7 +109,7 @@ export const PublicLayout = () => {
         </div>
         <div className="text-center space-y-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            &copy; {new Date().getFullYear()} Mohamed Sharfras. All rights
+            &copy; {new Date().getFullYear()} Mohamed Sharfiras. All rights
             reserved.
           </p>
           <Link
