@@ -16,7 +16,7 @@ export default function AdminBlogs() {
   const [content, setContent] = useState('');
   const [status, setStatus] = useState('Draft');
   const [category, setCategory] = useState('Technology');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<any[]>([]);
   
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -58,7 +58,7 @@ export default function AdminBlogs() {
         
         uploadedUrls.push(response.data.secure_url);
       }
-      setImages((prev: string[]) => [...prev, ...uploadedUrls]);
+      setImages((prev: any[]) => [...prev, ...uploadedUrls.map(url => ({ url, alt: '' }))]);
     } catch(err: any) {
       console.error(err);
       alert("Error uploading to Cloudinary: " + (err.response?.data?.error?.message || err.message));
@@ -92,7 +92,8 @@ export default function AdminBlogs() {
       );
       
       const url = response.data.secure_url;
-      insertMarkdown(`![Image](${url})`, '');
+      const alt = prompt("Enter image description (alt text):") || "Blog Image";
+      insertMarkdown(`![${alt}](${url})`, '');
     } catch(err: any) {
       console.error(err);
       alert("Upload failed.");
@@ -102,7 +103,19 @@ export default function AdminBlogs() {
   };
 
   const removeImage = (index: number) => {
-    setImages((prev: string[]) => prev.filter((_, i) => i !== index));
+    setImages((prev: any[]) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateImageAlt = (index: number, alt: string) => {
+    setImages((prev: any[]) => {
+      const newImages = [...prev];
+      if (typeof newImages[index] === 'string') {
+        newImages[index] = { url: newImages[index], alt };
+      } else {
+        newImages[index] = { ...newImages[index], alt };
+      }
+      return newImages;
+    });
   };
 
 
@@ -247,14 +260,27 @@ export default function AdminBlogs() {
                   <div className="space-y-3">
                     <label className="text-sm font-medium block">Blog Gallery / Header Images</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      {images.map((img, idx) => (
-                          <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 group bg-white">
-                            <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                              <X className="w-3 h-3" />
-                            </button>
+                      {images.map((img, idx) => {
+                        const url = typeof img === 'string' ? img : img.url;
+                        const alt = typeof img === 'string' ? '' : img.alt;
+                        return (
+                          <div key={idx} className="relative rounded-lg overflow-hidden border border-gray-200 group bg-white flex flex-col">
+                            <div className="aspect-video relative">
+                              <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                              <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <input 
+                              type="text" 
+                              placeholder="Alt text..." 
+                              value={alt} 
+                              onChange={(e) => updateImageAlt(idx, e.target.value)}
+                              className="text-[10px] p-1 w-full border-t outline-none focus:bg-blue-50"
+                            />
                           </div>
-                      ))}
+                        );
+                      })}
                       <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-video flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-blue-500 transition-colors bg-white">
                           <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading} />
                           {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-blue-600" /> : <UploadCloud className="w-6 h-6 text-gray-400" />}

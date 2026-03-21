@@ -3,17 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselProps {
-  images: string[];
+  images: (string | { url: string; alt: string })[];
 }
 
 export const ImageCarousel: React.FC<CarouselProps> = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images || images.length === 0) return null;
+
+  const getImgUrl = (img: any) => (typeof img === 'string' ? img : img.url);
+  const getImgAlt = (img: any) => (typeof img === 'string' ? 'Blog Post Detail' : img.alt || 'Blog Post Detail');
+
   if (images.length === 1) {
     return (
       <div className="bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm aspect-video max-h-[600px] flex items-center justify-center">
-        <img src={images[0]} alt="Single Preview" className="w-full h-full object-cover" />
+        <img 
+          src={getImgUrl(images[0])} 
+          alt={getImgAlt(images[0])} 
+          className="w-full h-full object-cover" 
+        />
       </div>
     );
   }
@@ -31,13 +39,13 @@ export const ImageCarousel: React.FC<CarouselProps> = ({ images }) => {
       <AnimatePresence mode="wait">
         <motion.img
           key={currentIndex}
-          src={images[currentIndex]}
+          src={getImgUrl(images[currentIndex])}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
           className="w-full h-full object-cover absolute inset-0"
-          alt={`Gallery View ${currentIndex + 1}`}
+          alt={getImgAlt(images[currentIndex])}
         />
       </AnimatePresence>
 

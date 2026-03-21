@@ -16,7 +16,8 @@ const Blog = () => {
       try {
         const q = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
-        setBlogs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const allBlogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setBlogs(allBlogs.filter((b: any) => b.status === "Published"));
       } catch (err) {
         console.error(err);
       } finally {
