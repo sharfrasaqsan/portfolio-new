@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import axios from 'axios';
 import { db } from '../../firebase/config';
-import { Plus, Edit2, Trash2, X, UploadCloud, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminBlogs() {
@@ -62,6 +62,40 @@ export default function AdminBlogs() {
     } catch(err: any) {
       console.error(err);
       alert("Error uploading to Cloudinary: " + (err.response?.data?.error?.message || err.message));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleContentImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      alert("Cloudinary not configured.");
+      setIsUploading(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        formData
+      );
+      
+      const url = response.data.secure_url;
+      insertMarkdown(`![Image](${url})`, '');
+    } catch(err: any) {
+      console.error(err);
+      alert("Upload failed.");
     } finally {
       setIsUploading(false);
     }
@@ -247,6 +281,15 @@ export default function AdminBlogs() {
                       <button type="button" onClick={() => insertMarkdown('[', '](url)')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Link</button>
                       <button type="button" onClick={() => insertMarkdown('> ')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Quote</button>
                       <button type="button" onClick={() => insertMarkdown('```\n', '\n```')} className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm">Code</button>
+                      <label className="px-3 py-1 bg-white hover:bg-gray-50 rounded text-xs border shadow-sm cursor-pointer flex items-center gap-1">
+                        {isUploading ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                        ) : (
+                          <ImageIcon className="w-3 h-3" />
+                        )}
+                        <span>{isUploading ? 'Uploading...' : 'Image'}</span>
+                        <input type="file" hidden accept="image/*" onChange={handleContentImageUpload} disabled={isUploading} />
+                      </label>
                     </div>
                     <textarea id="blogContent" required rows={12} value={content} onChange={(e)=>setContent(e.target.value)} className="w-full border rounded-b-lg p-4 bg-gray-50 font-mono text-sm leading-relaxed outline-none focus:ring-1 focus:ring-blue-500" placeholder="# Write your amazing post here..." />
                   </div>
