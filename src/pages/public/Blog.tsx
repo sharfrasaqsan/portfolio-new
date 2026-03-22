@@ -46,34 +46,45 @@ const Blog = () => {
       ) : (
         <div className="space-y-8">
           {blogs.map((b, i) => (
-            <motion.article 
-              initial={{ opacity: 0, x: -20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              transition={{ delay: i * 0.1 }}
-              key={b.id} 
-              className="group bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700 transition-all duration-300 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-2 h-full bg-transparent group-hover:bg-blue-600 transition-colors"></div>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{b.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
-                  <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
-                  {b.category && (
-                    <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
-                      {b.category}
-                    </span>
-                  )}
-                </div>
-                <Link to={`/blog/${b.id}`}>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">{b.title}</h2>
-                </Link>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg">{b.excerpt || 'No excerpt available. Click to read the full article and explore more insights inside.'}</p>
-                <Link to={`/blog/${b.id}`} className="text-blue-600 font-bold flex items-center space-x-1 hover:space-x-2 transition-all group/btn inline-flex">
-                  <span>Read Article</span>
-                  <ChevronRight className="w-4 h-4 text-blue-600" />
-                </Link>
-              </div>
-            </motion.article>
+             <motion.article 
+               initial={{ opacity: 0, x: -20 }} 
+               animate={{ opacity: 1, x: 0 }} 
+               transition={{ delay: i * 0.1 }}
+               key={b.id} 
+               className="group bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:border-gray-200 dark:hover:border-gray-700 transition-all duration-300 relative overflow-hidden flex flex-col md:flex-row gap-8"
+             >
+               <div className="absolute top-0 left-0 w-2 h-full bg-transparent group-hover:bg-blue-600 transition-colors"></div>
+               
+               <div className="flex-1 space-y-4">
+                 <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                   <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{b.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
+                   <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
+                   {b.category && (
+                     <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
+                       {b.category}
+                     </span>
+                   )}
+                 </div>
+                 <Link to={`/blog/${b.id}`}>
+                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">{b.title}</h2>
+                 </Link>
+                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg line-clamp-2 md:line-clamp-3">{b.excerpt || 'No excerpt available. Click to read the full article and explore more insights inside.'}</p>
+                 <Link to={`/blog/${b.id}`} className="text-blue-600 font-bold flex items-center space-x-1 hover:space-x-2 transition-all group/btn inline-flex">
+                   <span>Read Article</span>
+                   <ChevronRight className="w-4 h-4 text-blue-600" />
+                 </Link>
+               </div>
+
+               {(b.images?.length > 0 || b.coverImage) && (
+                 <Link to={`/blog/${b.id}`} className="w-full md:w-48 h-48 md:h-auto shrink-0 rounded-xl overflow-hidden shadow-md group-hover:shadow-xl transition-all duration-500">
+                    <img 
+                      src={typeof b.images?.[0] === 'object' ? b.images[0].url : (b.images?.[0] || b.coverImage)} 
+                      alt={b.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                 </Link>
+               )}
+             </motion.article>
           ))}
           {blogs.length === 0 && (
              <div className="text-center py-24 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">

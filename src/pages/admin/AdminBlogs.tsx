@@ -194,7 +194,11 @@ export default function AdminBlogs() {
             
             <div className="w-full sm:w-48 h-32 sm:h-auto bg-gray-100 relative shrink-0">
                {b.images?.length > 0 || b.coverImage ? (
-                 <img src={b.images?.[0] || b.coverImage} className="w-full h-full object-cover" alt="" />
+                  <img 
+                    src={typeof b.images?.[0] === 'object' ? b.images[0].url : (b.images?.[0] || b.coverImage)} 
+                    className="w-full h-full object-cover" 
+                    alt={b.title} 
+                  />
                ) : (
                  <div className="flex items-center justify-center h-full text-xs text-gray-400">No Image</div>
                )}
