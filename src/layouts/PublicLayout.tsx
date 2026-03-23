@@ -2,6 +2,7 @@ import { Outlet, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { Github, Linkedin, Facebook, Mail, MessageCircle } from "lucide-react";
+import FeedbackButton from "../components/FeedbackButton";
 
 export const PublicLayout = () => {
   return (
@@ -66,6 +67,7 @@ export const PublicLayout = () => {
           <Outlet />
         </motion.div>
       </main>
+      <FeedbackButton />
       <footer className="bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 py-12 flex flex-col items-center space-y-6">
         <div className="flex items-center space-x-6">
           <a

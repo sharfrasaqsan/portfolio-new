@@ -22,12 +22,15 @@ import Dashboard from './pages/admin/Dashboard';
 import AdminProjects from './pages/admin/AdminProjects';
 import AdminBlogs from './pages/admin/AdminBlogs';
 
+import AnalyticsTracker from './components/AnalyticsTracker';
+
 const App = () => {
   return (
     <HelmetProvider>
       <ThemeProvider>
         <AuthProvider>
           <Router>
+            <AnalyticsTracker />
             <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 flex-col space-y-4"><div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-950 animate-spin"></div><p className="text-gray-500 font-medium">Loading Portfolio...</p></div>}>
               <Routes>
                 {/* Public Routes */}

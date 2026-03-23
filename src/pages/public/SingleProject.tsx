@@ -149,8 +149,13 @@ const SingleProject = () => {
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500">
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500 space-y-1">
                   <p>Published on {project.createdAt?.toDate().toLocaleDateString()}</p>
+                  {project.updatedAt && (
+                    <p className="text-xs italic bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-800">
+                      Last Updated: {project.updatedAt.toDate().toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
              </div>
           </div>

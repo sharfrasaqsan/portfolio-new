@@ -85,6 +85,13 @@ const Home = () => {
           >
             Contact Me
           </Link>
+          <a
+            href="/resume.pdf"
+            download
+            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center space-x-2 transition px-2"
+          >
+            <span className="border-b-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 transition-colors">Resume</span>
+          </a>
           <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-800"></div>
           <Link
             to="/admin/login"

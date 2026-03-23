@@ -198,6 +198,14 @@ const SingleBlog = () => {
                           <Clock className="w-4 h-4 text-blue-500" />
                           <span className="font-bold text-gray-700 dark:text-gray-300">{Math.ceil((blog.content?.length || 0) / 1000) || 5} min read</span>
                         </div>
+                        {blog.updatedAt && (
+                           <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Updated: </span>
+                             <time className="text-xs font-bold text-gray-600 dark:text-gray-400">
+                                {blog.updatedAt.toDate().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                             </time>
+                           </div>
+                        )}
                       </div>
                     </div>
                   </header>

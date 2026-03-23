@@ -56,9 +56,9 @@ const Blog = () => {
                <div className="absolute top-0 left-0 w-2 h-full bg-transparent group-hover:bg-blue-600 transition-colors"></div>
                
                <div className="flex-1 space-y-4">
-                 <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                   <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{b.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
-                   <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="flex items-center space-x-1"><Calendar className="w-4 h-4" /> <span>{b.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString()}</span></span>
+                    <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /> <span>5 min read</span></span>
                    {b.category && (
                      <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
                        {b.category}
