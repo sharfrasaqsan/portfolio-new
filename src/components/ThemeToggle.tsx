@@ -1,6 +1,6 @@
-import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from "../context/ThemeContext";
+import { Sun, Moon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
@@ -12,7 +12,7 @@ export const ThemeToggle = () => {
       aria-label="Toggle Theme"
     >
       <AnimatePresence mode="wait" initial={false}>
-        {theme === 'dark' ? (
+        {theme === "dark" ? (
           <motion.div
             key="sun"
             initial={{ y: 20, opacity: 0, rotate: 45 }}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface SkeletonProps {
   className?: string;
@@ -6,9 +6,7 @@ interface SkeletonProps {
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className }) => {
   return (
-    <div 
-      className={`bg-gray-200 animate-pulse rounded-md ${className}`} 
-    />
+    <div className={`bg-gray-200 animate-pulse rounded-md ${className}`} />
   );
 };
 
@@ -67,4 +65,3 @@ export const PageSkeleton = () => (
     </div>
   </div>
 );
-
