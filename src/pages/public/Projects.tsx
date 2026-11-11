@@ -54,7 +54,13 @@ const Projects = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const currentCategory = searchParams.get("category") || "all";
-  const currentTech = searchParams.get("tech") || "all";
+  const rawTech = searchParams.get("tech") || "all";
+  const currentTech =
+    rawTech.toLowerCase() === "php" ||
+    rawTech.toLowerCase().includes("gohighlevel") ||
+    rawTech.toLowerCase().includes("ghl")
+      ? "all"
+      : rawTech;
   const currentSort = searchParams.get("sort") || "curated";
   const searchQuery = searchParams.get("q") || "";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
@@ -79,12 +85,20 @@ const Projects = () => {
     };
   }, []);
 
-  // Extract ONLY main technologies across the project catalog for the filter bar
+  // Extract main technologies for the filter bar (excluding PHP & GoHighLevel per user requirement)
   const popularTechList = useMemo(() => {
     const map: Record<string, number> = {};
     projects.forEach((p) => {
       const mainTechs = extractMainTechs(p.techStack);
       mainTechs.forEach((tech) => {
+        const lower = tech.toLowerCase();
+        if (
+          lower === "php" ||
+          lower.includes("gohighlevel") ||
+          lower.includes("ghl")
+        ) {
+          return;
+        }
         map[tech] = (map[tech] || 0) + 1;
       });
     });
@@ -244,6 +258,14 @@ const Projects = () => {
   };
 
   const handleTechChange = (techName: string) => {
+    const lower = techName.toLowerCase();
+    if (
+      lower === "php" ||
+      lower.includes("gohighlevel") ||
+      lower.includes("ghl")
+    ) {
+      return;
+    }
     // Toggle if clicking active tech
     if (currentTech.toLowerCase() === techName.toLowerCase()) {
       updateFilters({ tech: "all" });
@@ -597,6 +619,23 @@ const Projects = () => {
                         return (
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {cardMainTechs.map((tech) => {
+                              const lower = tech.toLowerCase();
+                              const isExcludedFilter =
+                                lower === "php" ||
+                                lower.includes("gohighlevel") ||
+                                lower.includes("ghl");
+
+                              if (isExcludedFilter) {
+                                return (
+                                  <span
+                                    key={tech}
+                                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
+                                  >
+                                    {tech}
+                                  </span>
+                                );
+                              }
+
                               const isCurrentFilter =
                                 currentTech.toLowerCase() ===
                                 tech.toLowerCase();
