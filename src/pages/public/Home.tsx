@@ -82,12 +82,15 @@ const Home = () => {
   }, [projects]);
 
   // Selected Case Studies on Homepage (sorted by admin homeOrder)
+  // The hero project is strictly excluded so its feature image is not duplicated in Selected Case Studies
   const selectedProjects = useMemo(() => {
     if (projects.length === 0) return [];
 
-    // Filter projects explicitly marked as featured on homepage
+    const heroId = heroProject?.id;
+
+    // Filter projects explicitly marked as featured on homepage (excluding hero project)
     const featuredProjects = projects
-      .filter((p) => p.featured)
+      .filter((p) => p.featured && p.id !== heroId)
       .sort(
         (a, b) =>
           (typeof a.homeOrder === "number" ? a.homeOrder : 99) -
@@ -106,22 +109,28 @@ const Home = () => {
         p.id === "MflCmhqBMJ5PDrz6H2DD",
     );
     const commercial = projects.filter(
-      (p) => p.type === "Company Project" && p.id !== atmospheric?.id,
+      (p) =>
+        p.type === "Company Project" &&
+        p.id !== atmospheric?.id &&
+        p.id !== heroId,
     );
     const others = projects.filter(
       (p) =>
         p.id !== atmospheric?.id &&
+        p.id !== heroId &&
         !commercial.some((c) => c.id === p.id),
     );
 
     const list: any[] = [];
-    if (atmospheric) list.push(atmospheric);
+    if (atmospheric && atmospheric.id !== heroId) list.push(atmospheric);
     if (commercial[0]) list.push(commercial[0]);
     if (commercial[1]) list.push(commercial[1]);
+    if (commercial[2]) list.push(commercial[2]);
     if (others[0]) list.push(others[0]);
 
-    return list.length >= 3 ? list : projects.slice(0, 4);
-  }, [projects]);
+    const nonHeroProjects = projects.filter((p) => p.id !== heroId);
+    return list.length >= 3 ? list : nonHeroProjects.slice(0, 4);
+  }, [projects, heroProject]);
 
   const canonicalUrl = absoluteUrl("/");
 
