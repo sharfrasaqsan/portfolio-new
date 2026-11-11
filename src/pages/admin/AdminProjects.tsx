@@ -7,6 +7,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import axios from "axios";
 import { db } from "../../firebase/config";
@@ -18,20 +19,51 @@ import {
   UploadCloud,
   Loader2,
   Star,
-  Copy,
   ExternalLink,
   Search,
   Check,
   AlertCircle,
+  ListOrdered,
+  ArrowUp,
+  ArrowDown,
+  ChevronUp,
+  ChevronDown,
+  Save,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import { invalidateContentCache } from "../../utils/dataCache";
 
+const CURATED_DEFAULT_ORDER: Record<string, number> = {
+  MflCmhqBMJ5PDrz6H2DD: 1, // Atmospheric Intelligence
+  "8CQMnDasKgNgV38huMuj": 2, // Fixxable
+  TCxzhTSYCxuBr9q7EJUf: 3, // Auction Solicitor
+  "0lqZjvslmHJncTTadAfw": 4, // Meridian Law Group
+  Z8kfLosbaaFhg7QnhCv5: 5, // Webphoria
+  b2L9FLiEVqPEPu99vFFM: 6, // Cosmetic Claims
+  "6JQheDhQU2rDolV5YAa3": 7, // Study Tracker
+  nxLXiGygVfYOuHQi4ftM: 8, // My Auction Lawyer
+  ocU78f4RZ0bUpFE1uZha: 9, // Lease Lawyer
+  "1xUxXzNbDPGVBrSkL8EV": 10, // Slinkup
+  TmAGAucYY1nIvtbNRVE0: 11, // Royal Reserve
+  AhtWy6o1sXQDjs820Os8: 12, // E-Shop
+};
+
+export const getEffectiveOrder = (p: any): number => {
+  if (typeof p.order === "number") return p.order;
+  if (CURATED_DEFAULT_ORDER[p.id]) return CURATED_DEFAULT_ORDER[p.id];
+  return 999;
+};
+
 export default function AdminProjects() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Manual Reorder Modal State
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [reorderList, setReorderList] = useState<any[]>([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,6 +106,7 @@ export default function AdminProjects() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "projects"), (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => getEffectiveOrder(a) - getEffectiveOrder(b));
       setProjects(data);
     });
     return () => unsub();
@@ -197,27 +230,6 @@ export default function AdminProjects() {
     setIsModalOpen(true);
   };
 
-  const handleDuplicate = async (p: any) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, createdAt, updatedAt, ...rest } = p;
-      const duplicateData = {
-        ...rest,
-        title: `${p.title || "Untitled"} (Copy)`,
-        status: "In Progress",
-        featured: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await addDoc(collection(db, "projects"), duplicateData);
-      invalidateContentCache();
-      showToast(`Duplicated "${p.title}" as draft copy.`);
-    } catch (err: any) {
-      console.error(err);
-      showToast("Failed to duplicate: " + err.message, "error");
-    }
-  };
-
   const confirmDelete = async (id: string, projectTitle: string) => {
     if (window.confirm(`Permanently delete project "${projectTitle}"?`)) {
       try {
@@ -248,6 +260,95 @@ export default function AdminProjects() {
     setLiveUrl("");
     setOrder("");
     setIsModalOpen(false);
+  };
+
+  // Reorder Modal Actions
+  const openReorderModal = () => {
+    const sorted = [...projects].sort(
+      (a, b) => getEffectiveOrder(a) - getEffectiveOrder(b),
+    );
+    setReorderList(sorted);
+    setIsOrderModalOpen(true);
+  };
+
+  const moveInModal = (index: number, direction: "up" | "down") => {
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= reorderList.length) return;
+    const nextList = [...reorderList];
+    const temp = nextList[index];
+    nextList[index] = nextList[target];
+    nextList[target] = temp;
+    setReorderList(nextList);
+  };
+
+  const resetToCuratedDefault = () => {
+    const reset = [...projects].sort((a, b) => {
+      const oA = CURATED_DEFAULT_ORDER[a.id] ?? 999;
+      const oB = CURATED_DEFAULT_ORDER[b.id] ?? 999;
+      return oA - oB;
+    });
+    setReorderList(reset);
+  };
+
+  const handleSaveBatchOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const batch = writeBatch(db);
+      reorderList.forEach((item, index) => {
+        const docRef = doc(db, "projects", item.id);
+        batch.update(docRef, {
+          order: index + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      invalidateContentCache();
+      showToast(`Saved manual order for all ${reorderList.length} projects.`);
+      setIsOrderModalOpen(false);
+    } catch (err: any) {
+      console.error("Batch order save error:", err);
+      showToast("Failed to save order: " + err.message, "error");
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  // Quick swap from project card
+  const handleQuickShift = async (
+    projectId: string,
+    direction: "up" | "down",
+  ) => {
+    const sorted = [...projects].sort(
+      (a, b) => getEffectiveOrder(a) - getEffectiveOrder(b),
+    );
+    const currentIndex = sorted.findIndex((p) => p.id === projectId);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return;
+
+    const itemA = sorted[currentIndex];
+    const itemB = sorted[targetIndex];
+
+    sorted[currentIndex] = itemB;
+    sorted[targetIndex] = itemA;
+
+    try {
+      const batch = writeBatch(db);
+      sorted.forEach((p, index) => {
+        batch.update(doc(db, "projects", p.id), {
+          order: index + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      invalidateContentCache();
+      showToast(
+        `Swapped position of "${itemA.title}" to #${targetIndex + 1}.`,
+      );
+    } catch (err: any) {
+      console.error("Quick shift error:", err);
+      showToast("Failed to reorder: " + err.message, "error");
+    }
   };
 
   // Filter projects by query and status
@@ -290,18 +391,31 @@ export default function AdminProjects() {
             Manage Projects
           </h1>
           <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
-            {projects.length} case studies registered in Firestore
+            {projects.length} case studies registered &bull; Ordered #1 to #
+            {projects.length}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Project</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Manual Order Trigger */}
+          <button
+            type="button"
+            onClick={openReorderModal}
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-md text-xs font-semibold border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#171F24] text-[#171F24] dark:text-[#F1F4F6] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer shadow-xs"
+          >
+            <ListOrdered className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
+            <span>Manual Order</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] transition-colors cursor-pointer shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Project</span>
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter Toolbar */}
@@ -352,121 +466,146 @@ export default function AdminProjects() {
 
       {/* Projects Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredProjects.map((p) => (
-          <div
-            key={p.id}
-            className="bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-[#E5E4DE] dark:border-[#27313A] overflow-hidden flex flex-col relative group transition-colors"
-          >
-            {p.featured && (
-              <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-[#1F51D0] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs z-10">
-                <Star className="w-2.5 h-2.5 fill-white" />
-                Featured
-              </span>
-            )}
-
-            {/* Thumbnail */}
-            <div className="h-36 bg-[#F2F1EC] dark:bg-[#222B33] relative overflow-hidden border-b border-[#E5E4DE] dark:border-[#27313A]">
-              {p.images?.length > 0 || p.image ? (
-                <img
-                  src={p.images?.[0] || p.image}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                  alt=""
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
-                  No preview asset
-                </div>
-              )}
-            </div>
-
-            {/* Body */}
-            <div className="p-5 flex-1 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-bold text-base text-[#171F24] dark:text-[#F1F4F6] line-clamp-1">
-                  {p.title}
-                </h2>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    p.status === "Live"
-                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50"
-                      : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50"
-                  }`}
-                >
-                  {p.status}
+        {filteredProjects.map((p, index) => {
+          const currentOrder = getEffectiveOrder(p);
+          return (
+            <div
+              key={p.id}
+              className="bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-[#E5E4DE] dark:border-[#27313A] overflow-hidden flex flex-col relative group transition-colors"
+            >
+              {p.featured && (
+                <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-[#1F51D0] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs z-10">
+                  <Star className="w-2.5 h-2.5 fill-white" />
+                  Featured
                 </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
-                <span>{p.category || "General"}</span>
-                <span>·</span>
-                <span>{p.type || "Individual"}</span>
-              </div>
-
-              <p className="text-xs text-[#55626F] dark:text-[#97A3AF] line-clamp-2 leading-relaxed">
-                {p.shortDesc || "No short summary provided."}
-              </p>
-
-              {p.techStack?.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {p.techStack.slice(0, 3).map((t: string) => (
-                    <span
-                      key={t}
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                  {p.techStack.length > 3 && (
-                    <span className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF] self-center">
-                      +{p.techStack.length - 3}
-                    </span>
-                  )}
-                </div>
               )}
-            </div>
 
-            {/* Actions Bar */}
-            <div className="border-t border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]/50 flex divide-x divide-[#E5E4DE] dark:divide-[#27313A] text-xs">
-              <a
-                href={`/projects/${p.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="View on live website"
-                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Live</span>
-              </a>
-              <button
-                type="button"
-                onClick={() => openEdit(p)}
-                title="Edit project"
-                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#1F51D0] dark:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer font-medium"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>Edit</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDuplicate(p)}
-                title="Duplicate project as draft"
-                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer font-medium"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Clone</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => confirmDelete(p.id, p.title)}
-                title="Delete project"
-                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer font-medium"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Del</span>
-              </button>
+              {/* Thumbnail with Quick Order Badge & Swap Arrows */}
+              <div className="h-36 bg-[#F2F1EC] dark:bg-[#222B33] relative overflow-hidden border-b border-[#E5E4DE] dark:border-[#27313A]">
+                {/* Visual Order Badge & Shift Controls */}
+                <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1 bg-[#171F24]/90 dark:bg-[#F1F4F6]/90 text-white dark:text-[#171F24] pl-2 pr-1 py-1 rounded text-xs font-mono font-bold shadow-xs border border-white/10 dark:border-black/10">
+                  <span>#{currentOrder}</span>
+                  <div className="flex flex-col ml-1 border-l border-white/20 dark:border-black/20 pl-1">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickShift(p.id, "up");
+                      }}
+                      title="Move up in display order"
+                      className="hover:text-[#4F7FF7] dark:hover:text-[#1F51D0] p-0.5 leading-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === filteredProjects.length - 1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickShift(p.id, "down");
+                      }}
+                      title="Move down in display order"
+                      className="hover:text-[#4F7FF7] dark:hover:text-[#1F51D0] p-0.5 leading-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {p.images?.length > 0 || p.image ? (
+                  <img
+                    src={p.images?.[0] || p.image}
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                    alt=""
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
+                    No preview asset
+                  </div>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="p-5 flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="font-bold text-base text-[#171F24] dark:text-[#F1F4F6] line-clamp-1">
+                    {p.title}
+                  </h2>
+                  <span
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      p.status === "Live"
+                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50"
+                        : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50"
+                    }`}
+                  >
+                    {p.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                  <span>{p.category || "General"}</span>
+                  <span>·</span>
+                  <span>{p.type || "Individual"}</span>
+                </div>
+
+                <p className="text-xs text-[#55626F] dark:text-[#97A3AF] line-clamp-2 leading-relaxed">
+                  {p.shortDesc || "No short summary provided."}
+                </p>
+
+                {p.techStack?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {p.techStack.slice(0, 3).map((t: string) => (
+                      <span
+                        key={t}
+                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                    {p.techStack.length > 3 && (
+                      <span className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF] self-center">
+                        +{p.techStack.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions Bar (Clone removed per user request) */}
+              <div className="border-t border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]/50 flex divide-x divide-[#E5E4DE] dark:divide-[#27313A] text-xs">
+                <a
+                  href={`/projects/${p.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="View on live website"
+                  className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Live</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => openEdit(p)}
+                  title="Edit project"
+                  className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#1F51D0] dark:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer font-medium"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => confirmDelete(p.id, p.title)}
+                  title="Delete project"
+                  className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer font-medium"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {filteredProjects.length === 0 && (
           <div className="col-span-full text-center py-16 text-[#55626F] dark:text-[#97A3AF] bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-dashed border-[#E5E4DE] dark:border-[#27313A] space-y-3">
@@ -482,50 +621,176 @@ export default function AdminProjects() {
                   setSearchQuery("");
                   setStatusFilter("All");
                 }}
-                className="text-xs font-semibold text-[#1F51D0] dark:text-[#4F7FF7] underline cursor-pointer"
+                className="text-xs font-mono text-[#1F51D0] dark:text-[#4F7FF7] underline cursor-pointer"
               >
-                Reset filters
+                Clear Filters
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="text-xs font-semibold text-[#1F51D0] dark:text-[#4F7FF7] underline cursor-pointer"
-              >
-                Create your first project entry
-              </button>
-            )}
+            ) : null}
           </div>
         )}
       </div>
 
-      {/* Modal Dialog */}
+      {/* Manual Project Reorder Modal */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="project-modal-title"
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto"
-          >
+        {isOrderModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto">
             <motion.div
               initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.96, opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              className="bg-[#FFFFFF] dark:bg-[#171F24] border border-[#E5E4DE] dark:border-[#27313A] rounded-lg max-w-2xl w-full shadow-2xl my-8 relative flex flex-col max-h-[85vh] text-[#171F24] dark:text-[#F1F4F6]"
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-[#E5E4DE] dark:border-[#27313A] flex justify-between items-center sticky top-0 bg-[#FFFFFF] dark:bg-[#171F24] z-10 rounded-t-lg">
+                <div>
+                  <h2 className="text-base font-bold flex items-center gap-2">
+                    <ListOrdered className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
+                    <span>Manual Project Ordering</span>
+                  </h2>
+                  <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
+                    Move projects up/down to configure the sequence on your live
+                    portfolio (#01 – #{reorderList.length}).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOrderModalOpen(false)}
+                  className="p-1.5 rounded-md hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Order List */}
+              <div className="p-5 overflow-y-auto space-y-2 flex-1">
+                {reorderList.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-3 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] hover:border-[#1F51D0]/30 transition-colors gap-3"
+                  >
+                    {/* Index Badge & Details */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-xs font-bold w-7 h-7 rounded-md bg-[#171F24] dark:bg-[#F1F4F6] text-white dark:text-[#171F24] flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+
+                      {/* Thumbnail Preview */}
+                      <div className="w-12 h-8 rounded bg-[#F2F1EC] dark:bg-[#222B33] overflow-hidden shrink-0 border border-[#E5E4DE] dark:border-[#27313A]">
+                        {item.images?.[0] || item.image ? (
+                          <img
+                            src={item.images?.[0] || item.image}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
+                      </div>
+
+                      {/* Title & Metadata */}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold truncate text-[#171F24] dark:text-[#F1F4F6]">
+                          {item.title}
+                        </p>
+                        <p className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                          {item.category || "General"} &bull;{" "}
+                          <span
+                            className={
+                              item.status === "Live"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-amber-600 dark:text-amber-400"
+                            }
+                          >
+                            {item.status || "Live"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Move Up / Down controls */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveInModal(idx, "up")}
+                        className="p-1.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-white dark:bg-[#171F24] text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === reorderList.length - 1}
+                        onClick={() => moveInModal(idx, "down")}
+                        className="p-1.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-white dark:bg-[#171F24] text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-[#E5E4DE] dark:border-[#27313A] flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#FBFBFA] dark:bg-[#13171B] rounded-b-lg shrink-0">
+                <button
+                  type="button"
+                  onClick={resetToCuratedDefault}
+                  className="text-xs font-mono text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6] underline cursor-pointer"
+                >
+                  Reset to Curated Default
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsOrderModalOpen(false)}
+                    className="px-3.5 py-2 rounded-md text-xs font-semibold border border-[#E5E4DE] dark:border-[#27313A] text-[#55626F] dark:text-[#97A3AF] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSavingOrder}
+                    onClick={handleSaveBatchOrder}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] disabled:opacity-50 cursor-pointer shadow-xs"
+                  >
+                    {isSavingOrder ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Order to Database</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit / Create Project Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
               className="bg-[#FFFFFF] dark:bg-[#171F24] border border-[#E5E4DE] dark:border-[#27313A] rounded-lg max-w-4xl w-full shadow-2xl my-8 relative flex flex-col max-h-[90vh] text-[#171F24] dark:text-[#F1F4F6]"
             >
               {/* Modal Header */}
               <div className="p-6 border-b border-[#E5E4DE] dark:border-[#27313A] flex justify-between items-center sticky top-0 bg-[#FFFFFF] dark:bg-[#171F24] z-10 rounded-t-lg">
                 <div>
-                  <h2
-                    id="project-modal-title"
-                    className="text-lg font-bold text-[#171F24] dark:text-[#F1F4F6]"
-                  >
-                    {editId ? "Edit Project Entry" : "Create New Project"}
+                  <h2 className="text-lg font-bold">
+                    {editId ? "Edit Project" : "Create New Project"}
                   </h2>
                   <p className="text-xs text-[#55626F] dark:text-[#97A3AF]">
-                    Fill in architectural context and assets
+                    Document engineering decisions, deliverables, and system
+                    architecture.
                   </p>
                 </div>
                 <button
@@ -647,14 +912,14 @@ export default function AdminProjects() {
                       </select>
                     </div>
 
-                    {/* Featured Checkbox */}
-                    <div className="flex items-center">
+                    {/* Featured Toggle */}
+                    <div className="md:col-span-2">
                       <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] w-full">
                         <input
                           type="checkbox"
                           checked={featured}
                           onChange={(e) => setFeatured(e.target.checked)}
-                          className="w-4 h-4 rounded text-[#1F51D0] focus:ring-[#1F51D0]"
+                          className="rounded border-[#E5E4DE] dark:border-[#27313A] text-[#1F51D0] focus:ring-[#1F51D0] w-4 h-4 cursor-pointer"
                         />
                         <span className="text-xs font-medium text-[#171F24] dark:text-[#F1F4F6]">
                           Feature on Homepage Selected Work
@@ -662,35 +927,21 @@ export default function AdminProjects() {
                       </label>
                     </div>
 
-                    {/* Short Description */}
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Short Summary (Archive &amp; Cards) *
-                      </label>
-                      <textarea
-                        required
-                        rows={2}
-                        value={shortDesc}
-                        onChange={(e) => setShortDesc(e.target.value)}
-                        placeholder="Concise 1-2 sentence engineering brief..."
-                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
-                      />
-                    </div>
-
                     {/* Tech Stack */}
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Tech Stack (comma separated)
+                        Tech Stack (Comma-separated) *
                       </label>
                       <input
+                        required
                         value={techStack}
                         onChange={(e) => setTechStack(e.target.value)}
-                        placeholder="React 19, TypeScript, Tailwind CSS, Vite, Cloudinary..."
+                        placeholder="React, TypeScript, Tailwind CSS, Vite"
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
-                    {/* Links */}
+                    {/* GitHub URL */}
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
                         GitHub Repository URL
@@ -703,9 +954,11 @@ export default function AdminProjects() {
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
+
+                    {/* Live URL */}
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Live Site URL
+                        Live Deployment URL
                       </label>
                       <input
                         type="url"
@@ -716,30 +969,55 @@ export default function AdminProjects() {
                       />
                     </div>
 
-                    {/* Image Upload Area */}
-                    <div className="md:col-span-2 space-y-3">
-                      <label className="text-xs font-semibold uppercase tracking-wider block text-[#171F24] dark:text-[#F1F4F6]">
-                        Project Screenshots &amp; Assets
+                    {/* Short Description */}
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Short Summary (Archive listing preview) *
                       </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {images.map((img, idx) => (
+                      <textarea
+                        required
+                        rows={2}
+                        value={shortDesc}
+                        onChange={(e) => setShortDesc(e.target.value)}
+                        placeholder="A 2-sentence summary outlining what this platform delivers."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                      />
+                    </div>
+
+                    {/* Image Assets Uploader */}
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold uppercase tracking-wider block text-[#171F24] dark:text-[#F1F4F6]">
+                        Screenshots &amp; Architecture Previews
+                      </label>
+                      <span className="text-[11px] text-[#55626F] dark:text-[#97A3AF] block mb-2">
+                        First image is used as primary card preview. Uploading
+                        automatically uploads to Cloudinary.
+                      </span>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                        {images.map((img, i) => (
                           <div
-                            key={idx}
+                            key={i}
                             className="relative aspect-video rounded-md overflow-hidden border border-[#E5E4DE] dark:border-[#27313A] group bg-[#F2F1EC] dark:bg-[#222B33]"
                           >
                             <img
                               src={img}
-                              alt={`Upload ${idx + 1}`}
+                              alt=""
                               className="w-full h-full object-cover"
                             />
                             <button
                               type="button"
-                              onClick={() => removeImage(idx)}
-                              aria-label="Remove image"
+                              onClick={() => removeImage(i)}
+                              aria-label={`Remove image ${i + 1}`}
                               className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                             >
                               <X className="w-3 h-3" />
                             </button>
+                            {i === 0 && (
+                              <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                                Cover
+                              </span>
+                            )}
                           </div>
                         ))}
 
@@ -755,64 +1033,66 @@ export default function AdminProjects() {
                           {isUploading ? (
                             <Loader2 className="w-5 h-5 animate-spin text-[#1F51D0] dark:text-[#4F7FF7]" />
                           ) : (
-                            <UploadCloud className="w-5 h-5 text-[#55626F] dark:text-[#97A3AF]" />
+                            <>
+                              <UploadCloud className="w-5 h-5 text-[#55626F] dark:text-[#97A3AF]" />
+                              <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF] mt-1.5">
+                                Add Screenshot
+                              </span>
+                            </>
                           )}
-                          <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF] mt-1.5">
-                            {isUploading ? "Uploading..." : "Add Images"}
-                          </span>
                         </label>
                       </div>
                     </div>
 
-                    {/* Deep Dive Details Section Header */}
+                    {/* Case Study Sections */}
                     <div className="md:col-span-2 pt-4 border-t border-[#E5E4DE] dark:border-[#27313A]">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
-                        Editorial Case Study Breakdown
+                        Deep-Dive Case Study Content
                       </h3>
-                      <p className="text-xs text-[#55626F] dark:text-[#97A3AF]">
-                        Structured case study details displayed on the single
-                        project view
+                      <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mb-4">
+                        Structured sections rendered on the individual case study
+                        view.
                       </p>
                     </div>
 
                     {/* Full Description */}
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        System Architecture &amp; Implementation Details
+                        Detailed System Overview
                       </label>
                       <textarea
-                        rows={5}
+                        rows={4}
                         value={fullDesc}
                         onChange={(e) => setFullDesc(e.target.value)}
-                        placeholder="Comprehensive breakdown of architectural choices, challenges, and solutions..."
+                        placeholder="Comprehensive explanation of what was engineered, deliverables, and capabilities."
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
-                    {/* Why I Built This */}
+                    {/* Why Built */}
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Project Purpose &amp; Problem Statement
+                        Problem Statement &amp; Purpose ("Why Built")
                       </label>
                       <textarea
                         rows={3}
                         value={whyBuilt}
                         onChange={(e) => setWhyBuilt(e.target.value)}
-                        placeholder="What concrete real-world problem or business requirement prompted this build?"
+                        placeholder="Business context, friction points, or technical challenges being resolved."
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
-                    {/* Lesson Learned / Mistake */}
+                    {/* Lessons Learned */}
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Engineering Trade-offs &amp; Lessons Learned
+                        Key Takeaways &amp; Architectural Tradeoffs
                       </label>
                       <textarea
                         rows={3}
                         value={lessonLearned}
                         onChange={(e) => setLessonLearned(e.target.value)}
-                        placeholder="Technical hurdles, compromises made, or performance trade-offs experienced..."
+                        placeholder="What worked well, performance optimizations, and future iterations."
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
@@ -843,14 +1123,13 @@ export default function AdminProjects() {
         )}
       </AnimatePresence>
 
-      {/* Floating Toast Notification */}
+      {/* Toast notification */}
       <AnimatePresence>
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.15 }}
             className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-xl text-xs font-medium flex items-center gap-2 border ${
               toast.type === "error"
                 ? "bg-red-50 dark:bg-red-950/90 text-red-800 dark:text-red-200 border-red-200 dark:border-red-900"
