@@ -855,15 +855,10 @@ export default function AdminProjects() {
                 {/* Hero Showcase Highlight Banner */}
                 <div className="p-4 rounded-lg border-2 border-purple-500/40 bg-purple-50/50 dark:bg-purple-950/20 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Hero Section Flagship Project</span>
-                      </span>
-                      <p className="text-[11px] text-[#55626F] dark:text-[#97A3AF] mt-0.5">
-                        Appears exclusively in the top hero header. Not duplicated in the Selected Case Studies list below.
-                      </p>
-                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Hero Section Flagship Project</span>
+                    </span>
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
                       <label className="text-[11px] font-mono font-medium text-purple-700 dark:text-purple-300 whitespace-nowrap">
@@ -1406,7 +1401,7 @@ export default function AdminProjects() {
                               ★ Flagship Hero Showcase Project
                             </span>
                             <span className="text-[11px] text-[#55626F] dark:text-[#97A3AF] block">
-                              Exclusive top header preview (not duplicated below)
+                              Exclusive top header preview
                             </span>
                           </div>
                         </label>
