@@ -5,6 +5,7 @@ import { Menu, X, ArrowUpRight, Rss } from "lucide-react";
 import FeedbackButton from "../components/FeedbackButton";
 import { TimezoneStatus } from "../components/TimezoneStatus";
 import { Logo } from "../components/Logo";
+import { SiteVisitCounters } from "../components/SiteVisitCounters";
 
 const navItems = [
   { name: "Home", path: "/" },
@@ -238,7 +239,15 @@ export const PublicLayout = () => {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-[#E5E4DE] dark:border-[#27313A] flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[#55626F] dark:text-[#97A3AF]">
+          {/* Site Visit Telemetry Strip */}
+          <div className="pt-6 border-t border-[#E5E4DE] dark:border-[#27313A] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <SiteVisitCounters />
+            <p className="text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
+              Live analytics recorded via edge telemetry
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-[#E5E4DE]/60 dark:border-[#27313A]/60 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[#55626F] dark:text-[#97A3AF]">
             <p>
               &copy; {new Date().getFullYear()} Mohamed Sharfiras. Designed and
               built with care.

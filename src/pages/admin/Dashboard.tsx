@@ -17,13 +17,11 @@ import {
   FileText,
   Eye,
   Activity,
-  BarChart3,
   MessageSquare,
   Plus,
   Trash2,
   Mail,
   Search,
-  ExternalLink,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -75,7 +73,6 @@ const Dashboard = () => {
   const [projectCount, setProjectCount] = useState<number | null>(null);
   const [blogCount, setBlogCount] = useState<number | null>(null);
   const [totalViews, setTotalViews] = useState<number | null>(null);
-  const [pageStats, setPageStats] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbackSearch, setFeedbackSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -87,20 +84,18 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pSnap, bSnap, globalSnap, analyticsSnap, fSnap] =
-          await Promise.all([
-            getDocs(collection(db, "projects")),
-            getDocs(collection(db, "blogs")),
-            getDoc(doc(db, "analytics", "global_stats")),
-            getDocs(collection(db, "analytics")),
-            getDocs(
-              query(
-                collection(db, "feedback"),
-                orderBy("createdAt", "desc"),
-                limit(15),
-              ),
+        const [pSnap, bSnap, globalSnap, fSnap] = await Promise.all([
+          getDocs(collection(db, "projects")),
+          getDocs(collection(db, "blogs")),
+          getDoc(doc(db, "analytics", "global_stats")),
+          getDocs(
+            query(
+              collection(db, "feedback"),
+              orderBy("createdAt", "desc"),
+              limit(25),
             ),
-          ]);
+          ),
+        ]);
 
         setProjectCount(pSnap.size);
         setBlogCount(Math.max(bSnap.size, INITIAL_BLOGS.length));
@@ -110,12 +105,6 @@ const Dashboard = () => {
         } else {
           setTotalViews(0);
         }
-
-        const stats = analyticsSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((s) => s.id !== "global_stats")
-          .sort((a: any, b: any) => (b.views || 0) - (a.views || 0));
-        setPageStats(stats);
 
         setFeedbacks(fSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {
@@ -143,8 +132,6 @@ const Dashboard = () => {
       showToast("error", "Failed to delete feedback.");
     }
   };
-
-  const maxViews = Math.max(1, ...pageStats.map((s) => s.views || 0));
 
   const filteredFeedbacks = feedbacks.filter((f) => {
     if (!feedbackSearch.trim()) return true;
@@ -190,7 +177,7 @@ const Dashboard = () => {
             Studio Console Overview
           </h1>
           <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
-            Operational telemetry, portfolio assets, and interactive feedback
+            Portfolio assets, content management, and visitor feedback
           </p>
         </div>
 
@@ -244,179 +231,97 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Two-Column Analytics & Feedback Hub */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Page Performance Table */}
-        <div className="lg:col-span-7 bg-[#FFFFFF] dark:bg-[#171F24] p-6 rounded-lg border border-[#E5E4DE] dark:border-[#27313A] space-y-5 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E5E4DE] dark:border-[#27313A]">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
-                Route Telemetry &amp; Page Views
-              </h2>
-            </div>
-            <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
-              {pageStats.length} monitored paths
-            </span>
+      {/* Feedback Management Hub */}
+      <div className="bg-[#FFFFFF] dark:bg-[#171F24] p-6 rounded-lg border border-[#E5E4DE] dark:border-[#27313A] space-y-4 shadow-2xs">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E4DE] dark:border-[#27313A]">
+          <div className="flex items-center space-x-2">
+            <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
+              Visitor Feedback Hub
+            </h2>
           </div>
-
-          <div className="space-y-3">
-            {pageStats.length > 0 ? (
-              pageStats.map((stat: any) => {
-                const percentage = Math.round(
-                  ((stat.views || 0) / maxViews) * 100,
-                );
-                return (
-                  <div
-                    key={stat.id}
-                    className="p-3 rounded-md bg-[#FBFBFA] dark:bg-[#13171B] border border-[#E5E4DE]/60 dark:border-[#27313A]/60 space-y-2 hover:border-[#1F51D0]/40 transition-colors"
-                  >
-                    <div className="flex justify-between items-center text-xs">
-                      <div className="flex items-center gap-1.5 truncate max-w-[280px]">
-                        <span className="font-mono font-medium text-[#171F24] dark:text-[#F1F4F6] truncate">
-                          {stat.path || "/"}
-                        </span>
-                        <a
-                          href={stat.path || "/"}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Open live path in new tab"
-                          className="text-[#55626F] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7]"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-mono font-bold text-[#1F51D0] dark:text-[#4F7FF7]">
-                          {stat.views || 0}
-                        </span>
-                        <span className="text-[10px] text-[#55626F] dark:text-[#97A3AF] ml-1 uppercase">
-                          views
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Progress track */}
-                    <div className="w-full bg-[#E5E4DE] dark:bg-[#27313A] h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-[#1F51D0] dark:bg-[#4F7FF7] h-full rounded-full transition-all duration-300"
-                        style={{ width: `${Math.max(4, percentage)}%` }}
-                      />
-                    </div>
-
-                    {stat.lastVisited && (
-                      <p className="text-[10px] text-[#55626F] dark:text-[#97A3AF] font-mono">
-                        Last ping:{" "}
-                        {stat.lastVisited.toDate?.()
-                          ? stat.lastVisited.toDate().toLocaleString()
-                          : "Recently"}
-                      </p>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-xs text-[#55626F] dark:text-[#97A3AF] italic py-8 text-center font-mono">
-                {loading
-                  ? "Loading telemetry records..."
-                  : "No page visits recorded yet."}
-              </p>
-            )}
-          </div>
+          <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+            {feedbacks.length} notes
+          </span>
         </div>
 
-        {/* Feedback Management Hub */}
-        <div className="lg:col-span-5 bg-[#FFFFFF] dark:bg-[#171F24] p-6 rounded-lg border border-[#E5E4DE] dark:border-[#27313A] space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E5E4DE] dark:border-[#27313A]">
-            <div className="flex items-center space-x-2">
-              <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
-                Feedback Hub
-              </h2>
-            </div>
-            <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
-              {feedbacks.length} notes
-            </span>
+        {/* Search Feedback */}
+        {feedbacks.length > 3 && (
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#55626F] dark:text-[#97A3AF]" />
+            <input
+              type="text"
+              value={feedbackSearch}
+              onChange={(e) => setFeedbackSearch(e.target.value)}
+              placeholder="Filter feedback notes..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-xs outline-none focus:ring-1 focus:ring-[#1F51D0]"
+            />
           </div>
+        )}
 
-          {/* Search Feedback */}
-          {feedbacks.length > 3 && (
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#55626F] dark:text-[#97A3AF]" />
-              <input
-                type="text"
-                value={feedbackSearch}
-                onChange={(e) => setFeedbackSearch(e.target.value)}
-                placeholder="Filter feedback notes..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-xs outline-none focus:ring-1 focus:ring-[#1F51D0]"
-              />
-            </div>
-          )}
+        <div className="space-y-3 max-h-[500px] overflow-y-auto">
+          {filteredFeedbacks.length > 0 ? (
+            filteredFeedbacks.map((f: any) => (
+              <div
+                key={f.id}
+                className="p-3.5 rounded-md bg-[#FBFBFA] dark:bg-[#13171B] border border-[#E5E4DE]/60 dark:border-[#27313A]/60 space-y-2 text-xs"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <span className="font-mono font-semibold text-[#1F51D0] dark:text-[#4F7FF7] truncate">
+                    {f.email || "Anonymous"}
+                  </span>
+                  <span className="text-[10px] text-[#55626F] dark:text-[#97A3AF] font-mono flex-shrink-0">
+                    {f.createdAt?.toDate?.()
+                      ? f.createdAt.toDate().toLocaleDateString()
+                      : "Recent"}
+                  </span>
+                </div>
 
-          <div className="space-y-3 max-h-[500px] overflow-y-auto">
-            {filteredFeedbacks.length > 0 ? (
-              filteredFeedbacks.map((f: any) => (
-                <div
-                  key={f.id}
-                  className="p-3.5 rounded-md bg-[#FBFBFA] dark:bg-[#13171B] border border-[#E5E4DE]/60 dark:border-[#27313A]/60 space-y-2 text-xs"
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="font-mono font-semibold text-[#1F51D0] dark:text-[#4F7FF7] truncate">
-                      {f.email || "Anonymous"}
-                    </span>
-                    <span className="text-[10px] text-[#55626F] dark:text-[#97A3AF] font-mono flex-shrink-0">
-                      {f.createdAt?.toDate?.()
-                        ? f.createdAt.toDate().toLocaleDateString()
-                        : "Recent"}
-                    </span>
-                  </div>
+                <p className="text-[#171F24] dark:text-[#F1F4F6] leading-relaxed">
+                  "{f.feedback}"
+                </p>
 
-                  <p className="text-[#171F24] dark:text-[#F1F4F6] leading-relaxed">
-                    "{f.feedback}"
-                  </p>
+                <div className="pt-2 border-t border-[#E5E4DE]/60 dark:border-[#27313A]/60 flex items-center justify-between text-[11px]">
+                  <span className="font-mono text-[#55626F] dark:text-[#97A3AF] truncate max-w-[150px]">
+                    {f.path || "/"}
+                  </span>
 
-                  <div className="pt-2 border-t border-[#E5E4DE]/60 dark:border-[#27313A]/60 flex items-center justify-between text-[11px]">
-                    <span className="font-mono text-[#55626F] dark:text-[#97A3AF] truncate max-w-[150px]">
-                      {f.path || "/"}
-                    </span>
+                  <div className="flex items-center space-x-2">
+                    {f.email &&
+                      f.email !== "anonymous" &&
+                      f.email.includes("@") && (
+                        <a
+                          href={`mailto:${f.email}?subject=${encodeURIComponent(
+                            "Re: Your portfolio note",
+                          )}&body=${encodeURIComponent(
+                            `Hi,\n\nThank you for reaching out via my portfolio. Regarding your note:\n"${f.feedback}"\n\n`,
+                          )}`}
+                          className="inline-flex items-center gap-1 text-[#1F51D0] dark:text-[#4F7FF7] hover:underline"
+                        >
+                          <Mail className="w-3 h-3" />
+                          <span>Reply</span>
+                        </a>
+                      )}
 
-                    <div className="flex items-center space-x-2">
-                      {f.email &&
-                        f.email !== "anonymous" &&
-                        f.email.includes("@") && (
-                          <a
-                            href={`mailto:${f.email}?subject=${encodeURIComponent(
-                              "Re: Your portfolio note",
-                            )}&body=${encodeURIComponent(
-                              `Hi,\n\nThank you for reaching out via my portfolio. Regarding your note:\n"${f.feedback}"\n\n`,
-                            )}`}
-                            className="inline-flex items-center gap-1 text-[#1F51D0] dark:text-[#4F7FF7] hover:underline"
-                          >
-                            <Mail className="w-3 h-3" />
-                            <span>Reply</span>
-                          </a>
-                        )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteFeedback(f.id)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                        title="Delete feedback"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFeedback(f.id)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                      title="Delete feedback"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-xs text-[#55626F] dark:text-[#97A3AF] italic py-8 text-center font-mono">
-                {loading
-                  ? "Checking feedback logs..."
-                  : "No feedback submitted yet."}
-              </p>
-            )}
-          </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-[#55626F] dark:text-[#97A3AF] italic py-8 text-center font-mono">
+              {loading
+                ? "Checking feedback logs..."
+                : "No feedback submitted yet."}
+            </p>
+          )}
         </div>
       </div>
     </div>

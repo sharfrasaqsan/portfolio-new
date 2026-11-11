@@ -30,12 +30,18 @@ const AnalyticsTracker = () => {
           { merge: true },
         );
 
-        // Also update a global counter
+        // Also update global, daily, and monthly counters atomically
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const monthKey = new Date().toISOString().slice(0, 7);
         const globalRef = doc(db, "analytics", "global_stats");
         await setDoc(
           globalRef,
           {
             totalViews: increment(1),
+            [`daily_${todayKey}`]: increment(1),
+            [`monthly_${monthKey}`]: increment(1),
+            lastDailyKey: todayKey,
+            lastMonthKey: monthKey,
             lastUpdate: serverTimestamp(),
           },
           { merge: true },

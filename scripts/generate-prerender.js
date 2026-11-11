@@ -21,18 +21,18 @@ const template = fs.readFileSync(templatePath, "utf-8");
 
 // Known project titles mapping for static metadata
 const projectTitles = {
-  "MflCmhqBMJ5PDrz6H2DD": "Atmospheric Intelligence — Weather Telemetry Platform",
+  MflCmhqBMJ5PDrz6H2DD: "Atmospheric Intelligence — Weather Telemetry Platform",
   "8CQMnDasKgNgV38huMuj": "Fixxable — SaaS Automation Platform",
-  "TCxzhTSYCxuBr9q7EJUf": "Auction Solicitor — Property Auction Legal Services",
+  TCxzhTSYCxuBr9q7EJUf: "Auction Solicitor — Property Auction Legal Services",
   "0lqZjvslmHJncTTadAfw": "Meridian Law Group — Modern Legal Web Platform",
   "1xUxXzNbDPGVBrSkL8EV": "Slinkup — Social Networking Web Application",
   "6JQheDhQU2rDolV5YAa3": "Study Tracker — Productivity & Assignment Platform",
-  "AhtWy6o1sXQDjs820Os8": "E-Shop: PC & Network Solutions — eCommerce System",
-  "TmAGAucYY1nIvtbNRVE0": "Royal Reserve: Luxury Hotel Booking Platform",
-  "Z8kfLosbaaFhg7QnhCv5": "Webphoria — Digital & Automation Agency",
-  "b2L9FLiEVqPEPu99vFFM": "Cosmetic Claims — Medical Negligence Legal Services",
-  "nxLXiGygVfYOuHQi4ftM": "My Auction Lawyer — Auction Property Legal Platform",
-  "ocU78f4RZ0bUpFE1uZha": "Lease Lawyer — Commercial Lease Legal Services",
+  AhtWy6o1sXQDjs820Os8: "E-Shop: PC & Network Solutions — eCommerce System",
+  TmAGAucYY1nIvtbNRVE0: "Royal Reserve: Luxury Hotel Booking Platform",
+  Z8kfLosbaaFhg7QnhCv5: "Webphoria — Digital & Automation Agency",
+  b2L9FLiEVqPEPu99vFFM: "Cosmetic Claims — Medical Negligence Legal Services",
+  nxLXiGygVfYOuHQi4ftM: "My Auction Lawyer — Auction Property Legal Platform",
+  ocU78f4RZ0bUpFE1uZha: "Lease Lawyer — Commercial Lease Legal Services",
 };
 
 // Known blog titles mapping for static metadata
@@ -45,17 +45,17 @@ const blogTitles = {
     "Next.js App Router vs Vite SPA in 2026: A Practical Architecture Decision Matrix",
   "enterprise-intranet-migration-lessons":
     "Lessons from Enterprise Intranet Migrations: Governance, Zero Downtime, and Managing 1,000+ Internal Pages",
-  "Ckh6CeqiqDYeywtEx6TT":
+  Ckh6CeqiqDYeywtEx6TT:
     "WordPress vs Custom Development: What I Actually Use for Client Projects in 2026",
-  "PMEpikraHow948AXehE4":
+  PMEpikraHow948AXehE4:
     "How I Build High-Converting Websites as a Developer, Not Just a Designer",
-  "RZ7k1CJZIHsbelpeEDxf":
+  RZ7k1CJZIHsbelpeEDxf:
     "From Static Website to Full System: How I Add Automation to My Web Projects",
-  "Z4TtwbJlpi5LWfmyg9ob":
+  Z4TtwbJlpi5LWfmyg9ob:
     "Why Most Business Websites Fail in 2026 (And How to Fix Yours Fast)",
-  "sJiJUF6nHiXqldWQwmYC":
+  sJiJUF6nHiXqldWQwmYC:
     "How I Build Fast, SEO-Optimized Websites Using HTML, WordPress & Modern Tools",
-  "sxP5sfpjgQT36gyq1r3W":
+  sxP5sfpjgQT36gyq1r3W:
     "7 Frontend Mistakes That Are Killing Your Website Performance (And How to Fix Them)",
 };
 
@@ -140,10 +140,7 @@ function generateHtml(route) {
   let html = template;
 
   // Replace Title
-  html = html.replace(
-    /<title>.*?<\/title>/,
-    `<title>${route.title}</title>`,
-  );
+  html = html.replace(/<title>.*?<\/title>/, `<title>${route.title}</title>`);
 
   // Replace Description
   html = html.replace(
@@ -169,7 +166,9 @@ function generateHtml(route) {
   return html;
 }
 
-console.log(`Generating static prerendered HTML files for ${allRoutes.length} routes...`);
+console.log(
+  `Generating static prerendered HTML files for ${allRoutes.length} routes...`,
+);
 
 allRoutes.forEach((route) => {
   const html = generateHtml(route);
@@ -183,7 +182,9 @@ allRoutes.forEach((route) => {
   }
 });
 
-console.log(`✓ Prerendered ${allRoutes.length} routes into dist/ successfully.`);
+console.log(
+  `✓ Prerendered ${allRoutes.length} routes into dist/ successfully.`,
+);
 
 // Ensure RSS feed is copied to dist
 const rssSource = path.resolve(__dirname, "../public/rss.xml");

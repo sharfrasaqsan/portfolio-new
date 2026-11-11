@@ -119,7 +119,11 @@ export default function AdminBlogs() {
               updatedAt: serverTimestamp(),
             });
           } catch (e) {
-            console.warn("Auto-syncing article to Firestore pending:", mb.id, e);
+            console.warn(
+              "Auto-syncing article to Firestore pending:",
+              mb.id,
+              e,
+            );
           }
         }
       }
