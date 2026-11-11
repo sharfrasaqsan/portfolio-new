@@ -17,7 +17,7 @@ const CATEGORIES = [
   { id: "live", label: "Live Deployments" },
 ];
 
-const PROJECTS_PER_PAGE = 6;
+const PROJECTS_PER_PAGE = 12;
 
 const Projects = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -172,12 +172,9 @@ const Projects = () => {
       <section aria-label="Project list">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
+            {Array.from({ length: PROJECTS_PER_PAGE }, (_, i) => (
+              <CardSkeleton key={i} />
+            ))}
           </div>
         ) : visibleProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
