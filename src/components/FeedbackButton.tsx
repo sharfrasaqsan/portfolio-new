@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { MessageSquare, X, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { db } from "../firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -10,6 +9,22 @@ const FeedbackButton = () => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus textarea when opened & handle Escape key
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +33,10 @@ const FeedbackButton = () => {
     setIsSending(true);
     try {
       await addDoc(collection(db, "feedback"), {
-        feedback,
-        email: email || "anonymous",
+        feedback: feedback.trim(),
+        email: email.trim() || "anonymous",
         path: window.location.pathname,
+        userAgent: navigator.userAgent,
         createdAt: serverTimestamp(),
       });
       setIsSent(true);
@@ -29,100 +45,154 @@ const FeedbackButton = () => {
       setTimeout(() => {
         setIsSent(false);
         setIsOpen(false);
-      }, 3000);
+      }, 2400);
     } catch (err) {
       console.error("Failed to send feedback", err);
-      alert("Something went wrong. Please try again later.");
+      alert(
+        "Unable to transmit note. Please reach out directly via contact form.",
+      );
     } finally {
       setIsSending(false);
     }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="absolute bottom-20 right-0 w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
-          >
-            {isSent ? (
-              <div className="p-8 text-center space-y-4">
-                <div className="flex justify-center">
-                  <CheckCircle2 className="w-12 h-12 text-green-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Thank You!
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Your feedback helps me improve this portfolio.
-                </p>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 print:hidden">
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-panel-title"
+          className="absolute bottom-12 right-0 w-80 sm:w-88 max-w-[calc(100vw-2rem)] bg-[#FFFFFF]/98 dark:bg-[#171F24]/98 backdrop-blur-md rounded-lg shadow-xl border border-[#E5E4DE] dark:border-[#27313A] overflow-hidden p-5 animate-in fade-in slide-in-from-bottom-2 duration-150"
+        >
+          {isSent ? (
+            <div className="py-6 text-center space-y-2.5">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-blue-600" /> Quick
-                    Feedback
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              <h3
+                id="feedback-panel-title"
+                className="text-sm font-bold text-[#171F24] dark:text-[#F1F4F6]"
+              >
+                Feedback Received
+              </h3>
+              <p className="text-xs text-[#55626F] dark:text-[#97A3AF] leading-relaxed">
+                Thank you for your thoughts. Your note was recorded directly to
+                the console.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Header */}
+              <div className="flex justify-between items-center pb-2.5 border-b border-[#E5E4DE] dark:border-[#27313A]">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-[#1F51D0] dark:bg-[#4F7FF7]" />
+                  <h3
+                    id="feedback-panel-title"
+                    className="text-xs font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    Direct Feedback
+                  </h3>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6] p-1 rounded-sm cursor-pointer"
+                  aria-label="Close dialog"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Message */}
+              <div>
+                <label
+                  htmlFor="fb-note-input"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-[#55626F] dark:text-[#97A3AF] mb-1"
+                >
+                  Your thoughts or note *
+                </label>
                 <textarea
+                  id="fb-note-input"
+                  ref={textareaRef}
                   required
-                  placeholder="What can I improve? Or just say hi!"
-                  rows={4}
+                  rows={3}
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+                  placeholder="Suggestions, questions, or bug reports..."
+                  className="w-full px-3 py-2 text-xs rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] focus:outline-none focus:ring-1 focus:ring-[#1F51D0] dark:focus:ring-[#4F7FF7] resize-none placeholder:text-[#55626F]/60"
                 />
+              </div>
+
+              {/* Email (Optional) */}
+              <div>
+                <label
+                  htmlFor="fb-email-input"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-[#55626F] dark:text-[#97A3AF] mb-1"
+                >
+                  Your Email (Optional)
+                </label>
                 <input
+                  id="fb-email-input"
                   type="email"
-                  placeholder="Email (optional)"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  placeholder="name@company.com"
+                  className="w-full px-3 py-2 text-xs rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] focus:outline-none focus:ring-1 focus:ring-[#1F51D0] dark:focus:ring-[#4F7FF7] placeholder:text-[#55626F]/60"
                 />
-                <button
-                  type="submit"
-                  disabled={isSending || !feedback.trim()}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-200 dark:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSending ? (
-                    "Sending..."
-                  ) : (
-                    <>
-                      <span>Send Feedback</span>
-                      <Send className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
 
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSending || !feedback.trim()}
+                className="w-full py-2.5 px-3 bg-[#1F51D0] dark:bg-[#4F7FF7] hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] text-white rounded-md text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Transmitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Direct Note</span>
+                    <Send className="w-3.5 h-3.5" aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* Floating Trigger Button */}
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full shadow-2xl flex items-center justify-center group relative border-4 border-white dark:border-gray-950"
+        aria-label={
+          isOpen
+            ? "Close direct feedback widget"
+            : "Open direct feedback widget"
+        }
+        aria-expanded={isOpen}
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#FFFFFF]/90 dark:bg-[#171F24]/90 backdrop-blur-sm text-[#171F24] dark:text-[#F1F4F6] border border-[#E5E4DE] dark:border-[#27313A] shadow-md hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] hover:border-[#1F51D0]/40 transition-all text-xs font-medium cursor-pointer"
       >
-        <div className="absolute inset-0 rounded-full bg-blue-600 scale-0 group-hover:scale-100 transition-transform duration-300 -z-10"></div>
         {isOpen ? (
-          <X className="w-6 h-6" />
+          <>
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Close</span>
+          </>
         ) : (
-          <MessageSquare className="w-6 h-6" />
+          <>
+            <MessageSquare
+              className="w-3.5 h-3.5 text-[#1F51D0] dark:text-[#4F7FF7]"
+              aria-hidden="true"
+            />
+            <span>Feedback</span>
+          </>
         )}
-      </motion.button>
+      </button>
     </div>
   );
 };

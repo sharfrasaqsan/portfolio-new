@@ -1,39 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  doc,
-  getDoc,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { motion, useScroll, useSpring } from "framer-motion";
 import {
   Calendar,
   Clock,
   ChevronLeft,
-  ArrowRight,
-  Facebook,
-  Twitter,
   Linkedin,
+  Twitter,
+  Facebook,
   Bookmark,
+  List,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { ImageCarousel } from "../../components/ImageCarousel";
 import { PageSkeleton } from "../../components/Skeleton";
+import { CodeBlock } from "../../components/CodeBlock";
 import ReactMarkdown from "react-markdown";
+import {
+  absoluteUrl,
+  calculateReadingTime,
+  resolveImageUrl,
+  buildArticleSchema,
+  buildBreadcrumbsSchema,
+} from "../../utils/seo";
+import { getCachedBlogs } from "../../utils/dataCache";
 
 const SingleBlog = () => {
   const { id } = useParams<{ id: string }>();
   const [blog, setBlog] = useState<any>(null);
-  const [recentBlogs, setRecentBlogs] = useState<any[]>([]);
   const [nextBlog, setNextBlog] = useState<any>(null);
   const [prevBlog, setPrevBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Smooth reading progress indicator
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -42,387 +43,396 @@ const SingleBlog = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
     const fetchBlogData = async () => {
       if (!id) return;
-      setLoading(true);
       try {
+        const allBlogs = await getCachedBlogs();
+        const pubBlogs = allBlogs.filter((b: any) => b.status === "Published");
+        const found = pubBlogs.find((b: any) => b.id === id);
+
+        if (found && isMounted) {
+          setBlog(found);
+          const currentIndex = pubBlogs.findIndex((b: any) => b.id === id);
+          if (currentIndex !== -1) {
+            setNextBlog(pubBlogs[currentIndex - 1] || null);
+            setPrevBlog(pubBlogs[currentIndex + 1] || null);
+          }
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
         const docRef = doc(db, "blogs", id);
         const docSnap = await getDoc(docRef);
-        let blogData: any = null;
-        if (docSnap.exists()) {
+
+        if (docSnap.exists() && isMounted) {
           const data = docSnap.data();
           if (data && data.status === "Published") {
-            blogData = { id: docSnap.id, ...data };
-            setBlog(blogData);
+            setBlog({ id: docSnap.id, ...data });
           } else {
             setBlog(null);
           }
         }
-
-        const q = query(
-          collection(db, "blogs"),
-          orderBy("createdAt", "desc"),
-          limit(30),
-        );
-        const snap = await getDocs(q);
-        const pubBlogs = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((b: any) => b.status === "Published");
-
-        setRecentBlogs(pubBlogs.filter((b: any) => b.id !== id).slice(0, 3));
-
-        // Fetch Next/Prev Blogs
-        if (blogData && blogData.createdAt) {
-          const currentIndex = pubBlogs.findIndex((b) => b.id === id);
-          if (currentIndex !== -1) {
-            setNextBlog(pubBlogs[currentIndex - 1] || null); // Newer
-            setPrevBlog(pubBlogs[currentIndex + 1] || null); // Older
-          }
-        }
       } catch (err) {
-        console.error("Error fetching blog", err);
+        console.error("Error fetching article:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
+
     fetchBlogData();
     window.scrollTo(0, 0);
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const shareUrl = window.location.href;
+  // Extract table of contents headings from Markdown
+  const headings = useMemo(() => {
+    if (!blog?.content) return [];
+    const lines = blog.content.split("\n");
+    const extracted: { text: string; id: string; level: number }[] = [];
+
+    lines.forEach((line: string) => {
+      const match = line.match(/^(#{2,3})\s+(.+)$/);
+      if (match) {
+        const level = match[1].length;
+        const text = match[2].trim();
+        const cleanId = text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-");
+        extracted.push({ text, id: cleanId, level });
+      }
+    });
+
+    return extracted;
+  }, [blog?.content]);
+
+  const canonicalUrl = absoluteUrl(`/blog/${id}`);
+  const fallbackTitle = blog ? blog.title : "Technical Article";
+  const readingTime = blog ? calculateReadingTime(blog.content) : 5;
+
+  // Resolve cover image strictly as string URL
+  const coverImageUrl = blog
+    ? resolveImageUrl(
+        Array.isArray(blog.images) && blog.images.length > 0
+          ? blog.images[0]
+          : blog.coverImage,
+      )
+    : resolveImageUrl(null);
+
+  const shareUrl = canonicalUrl;
 
   return (
-    <div className="relative">
+    <div className="relative max-w-4xl mx-auto space-y-12 pb-20">
+      {/* Scroll Reading Progress Bar */}
+      <motion.div
+        style={{ scaleX }}
+        className="fixed top-0 left-0 right-0 h-1 bg-[#1F51D0] dark:bg-[#4F7FF7] z-50 origin-left pointer-events-none"
+      />
+
+      {/* Immediate Helmet metadata to prevent empty title/canonical while loading */}
       <Helmet>
-        <title>{blog ? `${blog.title}` : "Loading Blog..."}</title>
-        {blog && (
-          <>
-            <meta
-              name="description"
-              content={
-                blog.excerpt || `Read ${blog.title} by Mohamed Sharfiras.`
-              }
-            />
-            <meta property="og:type" content="article" />
-            <meta property="og:url" content={shareUrl} />
-            <meta property="og:title" content={blog.title} />
-            <meta property="og:description" content={blog.excerpt} />
-            {blog.coverImage && (
-              <meta property="og:image" content={blog.coverImage} />
-            )}
-            <meta
-              property="article:published_time"
-              content={blog.createdAt?.toDate().toISOString()}
-            />
-            <meta property="article:author" content="Mohamed Sharfiras" />
-            <meta property="twitter:card" content="summary_large_image" />
-            <meta property="twitter:title" content={blog.title} />
-            <meta property="twitter:description" content={blog.excerpt} />
-            <script type="application/ld+json">
-              {JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "BlogPosting",
-                headline: blog.title,
-                image:
-                  blog.images?.length > 0 ? blog.images : [blog.coverImage],
-                author: {
-                  "@type": "Person",
-                  name: "Mohamed Sharfiras",
-                  url: "https://sharfras.com/about",
-                },
-                datePublished: blog.createdAt?.toDate().toISOString(),
-                description: blog.excerpt,
-              })}
-            </script>
-          </>
+        <title>{`${fallbackTitle} | Mohamed Sharfiras`}</title>
+        <meta
+          name="description"
+          content={
+            blog?.excerpt || `Read ${fallbackTitle} by Mohamed Sharfiras.`
+          }
+        />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:title" content={fallbackTitle} />
+        <meta
+          property="og:description"
+          content={blog?.excerpt || fallbackTitle}
+        />
+        <meta property="og:image" content={coverImageUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={fallbackTitle} />
+        <meta
+          name="twitter:description"
+          content={blog?.excerpt || fallbackTitle}
+        />
+        <meta name="twitter:image" content={coverImageUrl} />
+        {blog?.createdAt?.toDate && (
+          <meta
+            property="article:published_time"
+            content={blog.createdAt.toDate().toISOString()}
+          />
         )}
+        <meta property="article:author" content="Mohamed Sharfiras" />
+        {blog && (
+          <script type="application/ld+json">
+            {JSON.stringify(buildArticleSchema(blog, canonicalUrl))}
+          </script>
+        )}
+        <script type="application/ld+json">
+          {JSON.stringify(
+            buildBreadcrumbsSchema([
+              { name: "Home", path: "/" },
+              { name: "Blog", path: "/blog" },
+              { name: blog?.title || "Article", path: `/blog/${id}` },
+            ]),
+          )}
+        </script>
       </Helmet>
+
+      {/* Breadcrumb Navigation */}
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center space-x-2 text-xs font-mono text-[#55626F] dark:text-[#97A3AF]"
+      >
+        <Link
+          to="/"
+          className="hover:text-[#171F24] dark:hover:text-[#F1F4F6] transition-colors"
+        >
+          Home
+        </Link>
+        <span>/</span>
+        <Link
+          to="/blog"
+          className="hover:text-[#171F24] dark:hover:text-[#F1F4F6] transition-colors"
+        >
+          Blog
+        </Link>
+        <span>/</span>
+        <span
+          className="text-[#171F24] dark:text-[#F1F4F6] truncate max-w-[220px]"
+          aria-current="page"
+        >
+          {blog?.title || "Article"}
+        </span>
+      </nav>
 
       {loading ? (
         <PageSkeleton />
       ) : !blog ? (
-        <div className="text-center py-24 space-y-4">
-          <h1 className="text-3xl font-bold dark:text-white">
-            Blog post not found.
+        <div className="text-center py-24 space-y-4 border border-dashed border-[#E5E4DE] dark:border-[#27313A] rounded-md p-8">
+          <h1 className="text-2xl font-bold text-[#171F24] dark:text-[#F1F4F6]">
+            Article Not Located
           </h1>
+          <p className="text-xs text-[#55626F] dark:text-[#97A3AF] max-w-sm mx-auto">
+            This article may have been unpublished, moved, or deleted.
+          </p>
           <Link
             to="/blog"
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 inline-flex items-center space-x-2"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F51D0] dark:text-[#4F7FF7] hover:underline pt-2"
           >
-            <ChevronLeft className="w-4 h-4" /> <span>Back to Blogs</span>
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+            <span>Return to blog archive</span>
           </Link>
         </div>
       ) : (
-        <>
-          <motion.div
-            className="fixed top-0 left-0 right-0 h-1 bg-blue-600 origin-left z-[60]"
-            style={{ scaleX }}
-          />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-            <nav className="mb-8 flex items-center space-x-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-              <Link
-                to="/"
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Home
-              </Link>
-              <span className="text-gray-300 dark:text-gray-700">/</span>
-              <Link
-                to="/blog"
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Blog
-              </Link>
-              <span className="text-gray-300 dark:text-gray-700 hidden sm:inline">
-                /
-              </span>
-              <span className="text-gray-900 dark:text-white truncate hidden sm:inline max-w-[200px]">
-                {blog.title}
-              </span>
-            </nav>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-              <div className="lg:col-span-8">
-                <motion.article
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-full space-y-16"
+        <article className="space-y-10">
+          {/* Article Header */}
+          <header className="space-y-4 border-b border-[#E5E4DE] dark:border-[#27313A] pb-8">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
+              {blog.category && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-sm bg-[#F2F1EC] dark:bg-[#222B33] text-[#171F24] dark:text-[#F1F4F6] font-semibold uppercase text-[11px]">
+                  <Bookmark
+                    className="w-3 h-3 text-[#1F51D0] dark:text-[#4F7FF7]"
+                    aria-hidden="true"
+                  />
+                  <span>{blog.category}</span>
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                <time
+                  dateTime={
+                    blog.createdAt?.toDate
+                      ? blog.createdAt.toDate().toISOString()
+                      : undefined
+                  }
                 >
-                  <header className="space-y-8 text-left">
-                    <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-widest">
-                      <Bookmark className="w-3 h-3" />
-                      <span>{blog.category || "Technology"}</span>
-                    </div>
+                  {blog.createdAt?.toDate
+                    ? blog.createdAt.toDate().toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "Published"}
+                </time>
+              </span>
+              <span>&bull;</span>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{readingTime} min read</span>
+              </span>
+              {blog.updatedAt && (
+                <>
+                  <span>&bull;</span>
+                  <span className="text-[11px] text-[#55626F] dark:text-[#97A3AF]">
+                    Updated:{" "}
+                    {blog.updatedAt.toDate().toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </>
+              )}
+            </div>
 
-                    <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-[1.1] max-w-4xl">
-                      {blog.title}
-                    </h1>
+            <h1 className="fluid-h1 font-black text-[#171F24] dark:text-[#F1F4F6] tracking-tight leading-tight">
+              {blog.title}
+            </h1>
 
-                    <div className="flex flex-wrap items-center justify-start gap-8 text-sm text-gray-500 dark:text-gray-400 border-y border-gray-100 dark:border-gray-800 py-8">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-xl shadow-blue-200/50 dark:shadow-none">
-                          MS
-                        </div>
-                        <div>
-                          <p className="font-black text-gray-900 dark:text-white text-base leading-none">
-                            Mohamed Sharfiras
-                          </p>
-                          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-blue-600 dark:text-blue-400 mt-1.5">
-                            Web Developer
-                          </p>
-                        </div>
-                      </div>
-                      <div className="h-8 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <time className="font-bold text-gray-700 dark:text-gray-300">
-                            {blog.createdAt
-                              ?.toDate()
-                              .toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
-                          </time>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="w-4 h-4 text-blue-500" />
-                          <span className="font-bold text-gray-700 dark:text-gray-300">
-                            {Math.ceil((blog.content?.length || 0) / 1000) || 5}{" "}
-                            min read
-                          </span>
-                        </div>
-                        {blog.updatedAt && (
-                          <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                              Updated:{" "}
-                            </span>
-                            <time className="text-xs font-bold text-gray-600 dark:text-gray-400">
-                              {blog.updatedAt
-                                .toDate()
-                                .toLocaleDateString("en-US", {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                            </time>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </header>
+            {blog.excerpt && (
+              <p className="text-base sm:text-lg text-[#55626F] dark:text-[#97A3AF] leading-relaxed max-w-3xl">
+                {blog.excerpt}
+              </p>
+            )}
 
-                  {(blog.images?.length > 0 || blog.coverImage) && (
-                    <div className="rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-gray-100 dark:ring-gray-800">
-                      <ImageCarousel
-                        images={
-                          blog.images?.length > 0
-                            ? blog.images
-                            : [blog.coverImage]
-                        }
-                      />
-                    </div>
-                  )}
-
-                  <div className="prose prose-lg md:prose-xl prose-slate dark:prose-invert max-w-none prose-headings:font-black prose-p:text-lg md:prose-p:text-xl prose-img:rounded-[2rem]">
-                    <ReactMarkdown>{blog.content}</ReactMarkdown>
-                  </div>
-
-                  <nav className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-12 border-t border-gray-100 dark:border-gray-800">
-                    {prevBlog ? (
-                      <Link
-                        to={`/blog/${prevBlog.id}`}
-                        className="group p-8 rounded-[2rem] bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 hover:border-blue-600 transition-all text-left space-y-3"
-                      >
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
-                          Previous Post
-                        </span>
-                        <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 line-clamp-1">
-                          {prevBlog.title}
-                        </h4>
-                      </Link>
-                    ) : (
-                      <div />
-                    )}
-                    {nextBlog ? (
-                      <Link
-                        to={`/blog/${nextBlog.id}`}
-                        className="group p-8 rounded-[2rem] bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 hover:border-blue-600 transition-all text-right space-y-3"
-                      >
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
-                          Next Post
-                        </span>
-                        <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 line-clamp-1">
-                          {nextBlog.title}
-                        </h4>
-                      </Link>
-                    ) : (
-                      <div />
-                    )}
-                  </nav>
-
-                  <footer className="pt-16 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-8 bg-gray-50 dark:bg-gray-900/50 p-8 rounded-[2.5rem]">
-                      <div className="text-center sm:text-left">
-                        <p className="text-lg font-black text-gray-900 dark:text-white">
-                          Enjoyed this read?
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Share your thoughts with your network.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <a
-                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-4 bg-white dark:bg-gray-800 rounded-2xl hover:text-[#1877F2] transition-all"
-                        >
-                          <Facebook className="w-5 h-5" />
-                        </a>
-                        <a
-                          href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(blog.title)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-4 bg-white dark:bg-gray-800 rounded-2xl hover:text-[#1DA1F2] transition-all"
-                        >
-                          <Twitter className="w-5 h-5" />
-                        </a>
-                        <a
-                          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-4 bg-white dark:bg-gray-800 rounded-2xl hover:text-[#0A66C2] transition-all"
-                        >
-                          <Linkedin className="w-5 h-5" />
-                        </a>
-                      </div>
-                    </div>
-                  </footer>
-                </motion.article>
+            {/* Author Byline */}
+            <div className="pt-2 flex items-center gap-3 text-xs">
+              <div className="w-8 h-8 rounded-full bg-[#171F24] dark:bg-[#F1F4F6] text-[#FFFFFF] dark:text-[#171F24] flex items-center justify-center font-bold text-xs">
+                MS
               </div>
-
-              <div className="lg:col-span-4 space-y-12">
-                <motion.aside
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-12"
-                >
-                  <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-xl space-y-8">
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-widest flex items-center gap-3">
-                      <span className="w-2 h-8 bg-blue-600 rounded-full"></span>
-                      RECENTS
-                    </h3>
-                    <div className="space-y-8">
-                      {recentBlogs.map((rb) => (
-                        <Link
-                          to={`/blog/${rb.id}`}
-                          key={rb.id}
-                          className="group block space-y-3"
-                        >
-                          <time className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">
-                            {rb.createdAt?.toDate().toLocaleDateString()}
-                          </time>
-                          <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors text-lg line-clamp-2">
-                            {rb.title}
-                          </h4>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                    <div className="relative z-10 space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-xl font-black border border-white/20">
-                          MS
-                        </div>
-                        <div>
-                          <p className="font-black text-xl tracking-tight">
-                            Mohamed Sharfiras
-                          </p>
-                          <p className="text-blue-400 text-[10px] font-bold uppercase tracking-widest">
-                            Developer, SEO, AI Automation
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-gray-400 text-sm leading-relaxed">
-                        I build scalable digital products and automate complex
-                        workflows for high-performance teams.
-                      </p>
-                      <Link
-                        to="/contact"
-                        className="flex items-center justify-center gap-2 w-full py-4 bg-white text-gray-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-400 hover:text-white transition-all shadow-lg active:scale-95"
-                      >
-                        WORK WITH ME <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                    <div className="relative z-10 space-y-6">
-                      <h3 className="text-2xl font-black leading-tight">
-                        Ready to boost your digital presence?
-                      </h3>
-                      <p className="text-blue-100 text-sm leading-relaxed">
-                        Let's discuss your project and see how I can help you
-                        achieve your business goals.
-                      </p>
-                      <Link
-                        to="/contact"
-                        className="flex items-center justify-center gap-2 w-full py-4 bg-white text-blue-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-50 transition-all shadow-lg active:scale-95"
-                      >
-                        GET STARTED NOW <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </motion.aside>
+              <div>
+                <p className="font-bold text-[#171F24] dark:text-[#F1F4F6]">
+                  Mohamed Sharfiras
+                </p>
+                <p className="text-[#55626F] dark:text-[#97A3AF]">
+                  Web Developer &bull; Colombo, Sri Lanka
+                </p>
               </div>
             </div>
+          </header>
+
+          {/* Featured Image / Gallery */}
+          {(blog.images?.length > 0 || blog.coverImage) && (
+            <div className="overflow-hidden rounded-md border border-[#E5E4DE] dark:border-[#27313A]">
+              <ImageCarousel
+                images={
+                  blog.images?.length > 0 ? blog.images : [blog.coverImage]
+                }
+                title={blog.title}
+              />
+            </div>
+          )}
+
+          {/* Table of Contents (Only rendered if article has 3+ headings) */}
+          {headings.length >= 3 && (
+            <nav
+              aria-label="Table of contents"
+              className="p-5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] space-y-2.5"
+            >
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6] flex items-center gap-1.5">
+                <List
+                  className="w-3.5 h-3.5 text-[#1F51D0] dark:text-[#4F7FF7]"
+                  aria-hidden="true"
+                />
+                <span>Article Outline</span>
+              </h2>
+              <ul className="space-y-1.5 text-xs text-[#55626F] dark:text-[#97A3AF] font-mono">
+                {headings.map((h, i) => (
+                  <li
+                    key={i}
+                    className={h.level === 3 ? "pl-4 text-[11px]" : ""}
+                  >
+                    <a
+                      href={`#${h.id}`}
+                      className="hover:text-[#171F24] dark:hover:text-[#F1F4F6] hover:underline"
+                    >
+                      {h.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+
+          {/* Markdown Content (Formatted with comfortable editorial measure) */}
+          <div className="reading-measure prose prose-slate dark:prose-invert max-w-none text-base sm:text-lg leading-relaxed prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-[#171F24] dark:prose-headings:text-[#F1F4F6] prose-a:text-[#1F51D0] dark:prose-a:text-[#4F7FF7] prose-a:underline-offset-4">
+            <ReactMarkdown components={{ code: CodeBlock }}>
+              {blog.content}
+            </ReactMarkdown>
           </div>
-        </>
+
+          {/* Social Share Strip */}
+          <footer className="pt-8 border-t border-[#E5E4DE] dark:border-[#27313A] space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
+                  Share this article
+                </p>
+                <p className="text-xs text-[#55626F] dark:text-[#97A3AF]">
+                  Distribute technical notes to your professional network.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Share article on LinkedIn"
+                  className="p-2 rounded-sm border border-[#E5E4DE] dark:border-[#27313A] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] transition-colors"
+                >
+                  <Linkedin className="w-4 h-4" aria-hidden="true" />
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(blog.title)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Share article on Twitter"
+                  className="p-2 rounded-sm border border-[#E5E4DE] dark:border-[#27313A] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] transition-colors"
+                >
+                  <Twitter className="w-4 h-4" aria-hidden="true" />
+                </a>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Share article on Facebook"
+                  className="p-2 rounded-sm border border-[#E5E4DE] dark:border-[#27313A] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] transition-colors"
+                >
+                  <Facebook className="w-4 h-4" aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+
+            {/* Previous & Next Article Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {prevBlog ? (
+                <Link
+                  to={`/blog/${prevBlog.id}`}
+                  className="p-4 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] hover:border-[#1F51D0] dark:hover:border-[#4F7FF7] transition-colors space-y-1 text-left"
+                >
+                  <span className="text-[11px] font-mono uppercase text-[#55626F] dark:text-[#97A3AF]">
+                    &larr; Older Post
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-[#171F24] dark:text-[#F1F4F6] line-clamp-1">
+                    {prevBlog.title}
+                  </p>
+                </Link>
+              ) : (
+                <div />
+              )}
+
+              {nextBlog ? (
+                <Link
+                  to={`/blog/${nextBlog.id}`}
+                  className="p-4 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] hover:border-[#1F51D0] dark:hover:border-[#4F7FF7] transition-colors space-y-1 text-right"
+                >
+                  <span className="text-[11px] font-mono uppercase text-[#55626F] dark:text-[#97A3AF]">
+                    Newer Post &rarr;
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-[#171F24] dark:text-[#F1F4F6] line-clamp-1">
+                    {nextBlog.title}
+                  </p>
+                </Link>
+              ) : (
+                <div />
+              )}
+            </div>
+          </footer>
+        </article>
       )}
     </div>
   );

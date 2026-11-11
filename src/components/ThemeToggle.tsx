@@ -1,39 +1,23 @@
 import { useTheme } from "../context/ThemeContext";
 import { Sun, Moon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 group relative overflow-hidden"
-      aria-label="Toggle Theme"
+      className="p-2 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] text-[#171F24] dark:text-[#F1F4F6] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors inline-flex items-center justify-center cursor-pointer"
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
     >
-      <AnimatePresence mode="wait" initial={false}>
-        {theme === "dark" ? (
-          <motion.div
-            key="sun"
-            initial={{ y: 20, opacity: 0, rotate: 45 }}
-            animate={{ y: 0, opacity: 1, rotate: 0 }}
-            exit={{ y: -20, opacity: 0, rotate: -45 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Sun className="w-5 h-5 text-yellow-400 fill-yellow-400/20" />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="moon"
-            initial={{ y: 20, opacity: 0, rotate: 45 }}
-            animate={{ y: 0, opacity: 1, rotate: 0 }}
-            exit={{ y: -20, opacity: 0, rotate: -45 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Moon className="w-5 h-5 text-blue-600 fill-blue-600/10" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isDark ? (
+        <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" />
+      ) : (
+        <Moon className="w-4 h-4 text-[#1F51D0]" aria-hidden="true" />
+      )}
     </button>
   );
 };

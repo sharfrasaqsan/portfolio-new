@@ -10,13 +10,38 @@ import {
 } from "firebase/firestore";
 import axios from "axios";
 import { db } from "../../firebase/config";
-import { Plus, Edit2, Trash2, X, UploadCloud, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  UploadCloud,
+  Loader2,
+  Star,
+  Copy,
+  ExternalLink,
+  Search,
+  Check,
+  AlertCircle,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Helmet } from "react-helmet-async";
+import { invalidateContentCache } from "../../utils/dataCache";
 
 export default function AdminProjects() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+
+  // Toast feedback state
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -37,6 +62,14 @@ export default function AdminProjects() {
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
 
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "projects"), (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -54,8 +87,9 @@ export default function AdminProjects() {
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
     if (!cloudName || !uploadPreset) {
-      alert(
-        "Please configure Cloudinary environment variables (VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET) first.",
+      showToast(
+        "Cloudinary configuration missing (VITE_CLOUDINARY_CLOUD_NAME).",
+        "error",
       );
       setIsUploading(false);
       return;
@@ -77,11 +111,15 @@ export default function AdminProjects() {
         uploadedUrls.push(response.data.secure_url);
       }
       setImages((prev: string[]) => [...prev, ...uploadedUrls]);
+      showToast(
+        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""}.`,
+      );
     } catch (err: any) {
       console.error(err);
-      alert(
-        "Error uploading to Cloudinary: " +
+      showToast(
+        "Cloudinary upload failed: " +
           (err.response?.data?.error?.message || err.message),
+        "error",
       );
     } finally {
       setIsUploading(false);
@@ -96,14 +134,14 @@ export default function AdminProjects() {
     e.preventDefault();
     try {
       const payload = {
-        title,
-        shortDesc,
-        fullDesc,
-        whyBuilt,
-        lessonLearned,
+        title: title.trim(),
+        shortDesc: shortDesc.trim(),
+        fullDesc: fullDesc.trim(),
+        whyBuilt: whyBuilt.trim(),
+        lessonLearned: lessonLearned.trim(),
         status,
-        timeToBuild,
-        category,
+        timeToBuild: timeToBuild.trim(),
+        category: category.trim(),
         images,
         featured,
         type,
@@ -112,22 +150,28 @@ export default function AdminProjects() {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        githubUrl,
-        liveUrl,
+        githubUrl: githubUrl.trim(),
+        liveUrl: liveUrl.trim(),
         updatedAt: serverTimestamp(),
       };
+
       if (editId) {
         await updateDoc(doc(db, "projects", editId), payload);
+        showToast(`Project "${title}" updated.`);
       } else {
         await addDoc(collection(db, "projects"), {
           ...payload,
           createdAt: serverTimestamp(),
         });
+        showToast(`Project "${title}" created.`);
       }
+
+      // Invalidate public page in-memory cache
+      invalidateContentCache();
       closeModal();
     } catch (err: any) {
       console.error(err);
-      alert("Error saving project: " + err.message);
+      showToast("Error saving project: " + err.message, "error");
     }
   };
 
@@ -141,8 +185,6 @@ export default function AdminProjects() {
     setStatus(p.status || "In Progress");
     setTimeToBuild(p.timeToBuild || "");
     setCategory(p.category || "Web App");
-
-    // Support legacy 'image' string or new 'images' array
     setImages(p.images ? p.images : p.image ? [p.image] : []);
     setFeatured(p.featured || false);
     setType(p.type || "Individual Project");
@@ -152,9 +194,36 @@ export default function AdminProjects() {
     setIsModalOpen(true);
   };
 
-  const confirmDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this project?")) {
-      await deleteDoc(doc(db, "projects", id));
+  const handleDuplicate = async (p: any) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, createdAt, updatedAt, ...rest } = p;
+      const duplicateData = {
+        ...rest,
+        title: `${p.title || "Untitled"} (Copy)`,
+        status: "In Progress",
+        featured: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "projects"), duplicateData);
+      invalidateContentCache();
+      showToast(`Duplicated "${p.title}" as draft copy.`);
+    } catch (err: any) {
+      console.error(err);
+      showToast("Failed to duplicate: " + err.message, "error");
+    }
+  };
+
+  const confirmDelete = async (id: string, projectTitle: string) => {
+    if (window.confirm(`Permanently delete project "${projectTitle}"?`)) {
+      try {
+        await deleteDoc(doc(db, "projects", id));
+        invalidateContentCache();
+        showToast(`Deleted "${projectTitle}".`);
+      } catch (err: any) {
+        showToast("Delete failed: " + err.message, "error");
+      }
     }
   };
 
@@ -177,231 +246,478 @@ export default function AdminProjects() {
     setIsModalOpen(false);
   };
 
+  // Filter projects by query and status
+  const filteredProjects = projects.filter((p) => {
+    if (statusFilter === "Featured" && !p.featured) return false;
+    if (
+      statusFilter !== "All" &&
+      statusFilter !== "Featured" &&
+      p.status !== statusFilter
+    ) {
+      return false;
+    }
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchTitle = (p.title || "").toLowerCase().includes(q);
+    const matchCategory = (p.category || "").toLowerCase().includes(q);
+    const matchStack = (p.techStack || []).some((t: string) =>
+      t.toLowerCase().includes(q),
+    );
+    return matchTitle || matchCategory || matchStack;
+  });
+
+  const countLive = projects.filter((p) => p.status === "Live").length;
+  const countInProgress = projects.filter(
+    (p) => p.status === "In Progress",
+  ).length;
+  const countFeatured = projects.filter((p) => p.featured).length;
+
   return (
-    <div className="space-y-6 flex-1 w-full mx-auto max-w-7xl">
-      <div className="flex justify-between items-center bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-        <h1 className="text-2xl font-bold">Manage Projects</h1>
+    <div className="space-y-6">
+      <Helmet>
+        <title>Projects — Studio Console</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#E5E4DE] dark:border-[#27313A]">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#171F24] dark:text-[#F1F4F6]">
+            Manage Projects
+          </h1>
+          <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
+            {projects.length} case studies registered in Firestore
+          </p>
+        </div>
+
         <button
+          type="button"
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center space-x-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
         >
-          <Plus className="w-5 h-5" /> <span>Add Project</span>
+          <Plus className="w-4 h-4" />
+          <span>Add New Project</span>
         </button>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-[#FFFFFF] dark:bg-[#171F24] p-3.5 rounded-lg border border-[#E5E4DE] dark:border-[#27313A]">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#55626F] dark:text-[#97A3AF]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by title, category, or tech stack..."
+            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] placeholder:text-[#55626F] dark:placeholder:text-[#97A3AF] focus:outline-none focus:ring-1 focus:ring-[#1F51D0]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6]"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[
+            { id: "All", label: `All (${projects.length})` },
+            { id: "Live", label: `Live (${countLive})` },
+            { id: "In Progress", label: `In Progress (${countInProgress})` },
+            { id: "Featured", label: `Featured (${countFeatured})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setStatusFilter(tab.id)}
+              className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                statusFilter === tab.id
+                  ? "bg-[#1F51D0] text-white font-semibold"
+                  : "bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Projects Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((p) => (
+        {filteredProjects.map((p) => (
           <div
             key={p.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative"
+            className="bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-[#E5E4DE] dark:border-[#27313A] overflow-hidden flex flex-col relative group transition-colors"
           >
             {p.featured && (
-              <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-1 rounded-full z-10">
-                FEATURED
+              <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-[#1F51D0] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs z-10">
+                <Star className="w-2.5 h-2.5 fill-white" />
+                Featured
               </span>
             )}
-            <div className="h-32 bg-gray-100 relative">
+
+            {/* Thumbnail */}
+            <div className="h-36 bg-[#F2F1EC] dark:bg-[#222B33] relative overflow-hidden border-b border-[#E5E4DE] dark:border-[#27313A]">
               {p.images?.length > 0 || p.image ? (
                 <img
                   src={p.images?.[0] || p.image}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                   alt=""
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
-                  No Image
+                <div className="flex items-center justify-center h-full text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
+                  No preview asset
                 </div>
               )}
             </div>
+
+            {/* Body */}
             <div className="p-5 flex-1 space-y-3">
-              <div className="flex justify-between items-start">
-                <h3 className="font-bold text-lg">{p.title}</h3>
-                <div className="flex flex-col items-end space-y-1">
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "Live" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-                  >
-                    {p.status}
-                  </span>
-                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-                    {p.type || "Individual"}
-                  </span>
-                </div>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-bold text-base text-[#171F24] dark:text-[#F1F4F6] line-clamp-1">
+                  {p.title}
+                </h2>
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    p.status === "Live"
+                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50"
+                      : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50"
+                  }`}
+                >
+                  {p.status}
+                </span>
               </div>
-              <p className="text-sm text-gray-500 line-clamp-2">
-                {p.shortDesc}
+
+              <div className="flex items-center gap-2 text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                <span>{p.category || "General"}</span>
+                <span>·</span>
+                <span>{p.type || "Individual"}</span>
+              </div>
+
+              <p className="text-xs text-[#55626F] dark:text-[#97A3AF] line-clamp-2 leading-relaxed">
+                {p.shortDesc || "No short summary provided."}
               </p>
+
+              {p.techStack?.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {p.techStack.slice(0, 3).map((t: string) => (
+                    <span
+                      key={t}
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                  {p.techStack.length > 3 && (
+                    <span className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF] self-center">
+                      +{p.techStack.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="border-t border-gray-50 flex">
-              <button
-                onClick={() => openEdit(p)}
-                className="flex-1 py-3 flex justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+
+            {/* Actions Bar */}
+            <div className="border-t border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]/50 flex divide-x divide-[#E5E4DE] dark:divide-[#27313A] text-xs">
+              <a
+                href={`/projects/${p.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View on live website"
+                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors"
               >
-                <Edit2 className="w-4 h-4" />
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Live</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => openEdit(p)}
+                title="Edit project"
+                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#1F51D0] dark:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer font-medium"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Edit</span>
               </button>
               <button
-                onClick={() => confirmDelete(p.id)}
-                className="flex-1 py-3 flex justify-center text-red-600 hover:bg-red-50 transition-colors border-l border-gray-50"
+                type="button"
+                onClick={() => handleDuplicate(p)}
+                title="Duplicate project as draft"
+                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer font-medium"
               >
-                <Trash2 className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clone</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDelete(p.id, p.title)}
+                title="Delete project"
+                className="flex-1 py-2.5 flex items-center justify-center space-x-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Del</span>
               </button>
             </div>
           </div>
         ))}
-        {projects.length === 0 && (
-          <div className="col-span-3 text-center py-12 text-gray-500 bg-white rounded-xl">
-            No projects found.
+
+        {filteredProjects.length === 0 && (
+          <div className="col-span-full text-center py-16 text-[#55626F] dark:text-[#97A3AF] bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-dashed border-[#E5E4DE] dark:border-[#27313A] space-y-3">
+            <p className="font-mono text-sm">
+              {searchQuery || statusFilter !== "All"
+                ? "No projects match your filter criteria."
+                : "No projects stored in Firestore database."}
+            </p>
+            {searchQuery || statusFilter !== "All" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("All");
+                }}
+                className="text-xs font-semibold text-[#1F51D0] dark:text-[#4F7FF7] underline cursor-pointer"
+              >
+                Reset filters
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="text-xs font-semibold text-[#1F51D0] dark:text-[#4F7FF7] underline cursor-pointer"
+              >
+                Create your first project entry
+              </button>
+            )}
           </div>
         )}
       </div>
 
+      {/* Modal Dialog */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-modal-title"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto"
+          >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl max-w-4xl w-full shadow-2xl my-8 relative flex flex-col max-h-[90vh]"
+              exit={{ scale: 0.96, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="bg-[#FFFFFF] dark:bg-[#171F24] border border-[#E5E4DE] dark:border-[#27313A] rounded-lg max-w-4xl w-full shadow-2xl my-8 relative flex flex-col max-h-[90vh] text-[#171F24] dark:text-[#F1F4F6]"
             >
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10 rounded-t-xl">
-                <h2 className="text-2xl font-bold">
-                  {editId ? "Edit Project" : "Add New Project"}
-                </h2>
+              {/* Modal Header */}
+              <div className="p-6 border-b border-[#E5E4DE] dark:border-[#27313A] flex justify-between items-center sticky top-0 bg-[#FFFFFF] dark:bg-[#171F24] z-10 rounded-t-lg">
+                <div>
+                  <h2
+                    id="project-modal-title"
+                    className="text-lg font-bold text-[#171F24] dark:text-[#F1F4F6]"
+                  >
+                    {editId ? "Edit Project Entry" : "Create New Project"}
+                  </h2>
+                  <p className="text-xs text-[#55626F] dark:text-[#97A3AF]">
+                    Fill in architectural context and assets
+                  </p>
+                </div>
                 <button
+                  type="button"
                   onClick={closeModal}
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  aria-label="Close dialog"
+                  className="p-1.5 rounded-md hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto">
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto space-y-6">
                 <form
                   id="projectForm"
                   onSubmit={handleSubmit}
                   className="space-y-6"
                 >
-                  {/* Basic Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Title */}
                     <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Title
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Project Title *
                       </label>
                       <input
                         required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        placeholder="e.g. Atmospheric Intelligence"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
+
+                    {/* Category */}
                     <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Category
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Category *
                       </label>
                       <input
                         required
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
-                        placeholder="e.g. Web App, Mobile"
+                        placeholder="e.g. Commercial Platform, Application"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
+                    {/* Status */}
                     <div>
-                      <label className="text-sm font-medium mb-1 block">
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
                         Status
                       </label>
                       <select
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       >
-                        <option>Live</option>
-                        <option>In Progress</option>
-                        <option>Archived</option>
+                        <option value="Live">Live</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Archived">Archived</option>
                       </select>
                     </div>
+
+                    {/* Building Time */}
                     <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Building Time
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Building Time / Duration
                       </label>
                       <input
                         value={timeToBuild}
                         onChange={(e) => setTimeToBuild(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
-                        placeholder="e.g. 2 weeks"
+                        placeholder="e.g. 4 months, 2 weeks"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
+                    {/* Project Type */}
                     <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Project Type
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Project Engagement Type
                       </label>
                       <select
                         value={type}
                         onChange={(e) => setType(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       >
-                        <option>Individual Project</option>
-                        <option>Freelance Project</option>
-                        <option>Company Project</option>
-                        <option>Collaborative</option>
-                        <option>Open Source</option>
+                        <option value="Individual Project">
+                          Individual Project
+                        </option>
+                        <option value="Company Project">Company Project</option>
+                        <option value="Freelance Project">
+                          Freelance Project
+                        </option>
+                        <option value="Collaborative">Collaborative</option>
+                        <option value="Open Source">Open Source</option>
                       </select>
                     </div>
 
+                    {/* Featured Checkbox */}
+                    <div className="flex items-center">
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] w-full">
+                        <input
+                          type="checkbox"
+                          checked={featured}
+                          onChange={(e) => setFeatured(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#1F51D0] focus:ring-[#1F51D0]"
+                        />
+                        <span className="text-xs font-medium text-[#171F24] dark:text-[#F1F4F6]">
+                          Feature on Homepage Selected Work
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Short Description */}
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium mb-1 block">
-                        Short Description
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Short Summary (Archive &amp; Cards) *
                       </label>
                       <textarea
                         required
                         rows={2}
                         value={shortDesc}
                         onChange={(e) => setShortDesc(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        placeholder="Concise 1-2 sentence engineering brief..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
+                    {/* Tech Stack */}
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium mb-1 block">
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
                         Tech Stack (comma separated)
                       </label>
                       <input
                         value={techStack}
                         onChange={(e) => setTechStack(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
-                        placeholder="React, Firebase..."
+                        placeholder="React 19, TypeScript, Tailwind CSS, Vite, Cloudinary..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                      />
+                    </div>
+
+                    {/* Links */}
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        GitHub Repository URL
+                      </label>
+                      <input
+                        type="url"
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                        placeholder="https://github.com/..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Live Site URL
+                      </label>
+                      <input
+                        type="url"
+                        value={liveUrl}
+                        onChange={(e) => setLiveUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
 
                     {/* Image Upload Area */}
                     <div className="md:col-span-2 space-y-3">
-                      <label className="text-sm font-medium block">
-                        Project Images (Upload Multiple)
+                      <label className="text-xs font-semibold uppercase tracking-wider block text-[#171F24] dark:text-[#F1F4F6]">
+                        Project Screenshots &amp; Assets
                       </label>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {images.map((img, idx) => (
                           <div
                             key={idx}
-                            className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 group"
+                            className="relative aspect-video rounded-md overflow-hidden border border-[#E5E4DE] dark:border-[#27313A] group bg-[#F2F1EC] dark:bg-[#222B33]"
                           >
                             <img
                               src={img}
-                              alt={`Preview ${idx}`}
+                              alt={`Upload ${idx + 1}`}
                               className="w-full h-full object-cover"
                             />
                             <button
                               type="button"
                               onClick={() => removeImage(idx)}
-                              className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-label="Remove image"
+                              className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                             >
                               <X className="w-3 h-3" />
                             </button>
                           </div>
                         ))}
-                        <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-video flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-blue-500 transition-colors">
+
+                        <label className="border-2 border-dashed border-[#E5E4DE] dark:border-[#27313A] rounded-md aspect-video flex flex-col items-center justify-center cursor-pointer hover:border-[#1F51D0] dark:hover:border-[#4F7FF7] transition-colors bg-[#FBFBFA] dark:bg-[#13171B]">
                           <input
                             type="file"
                             multiple
@@ -411,98 +727,79 @@ export default function AdminProjects() {
                             disabled={isUploading}
                           />
                           {isUploading ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                            <Loader2 className="w-5 h-5 animate-spin text-[#1F51D0] dark:text-[#4F7FF7]" />
                           ) : (
-                            <UploadCloud className="w-6 h-6 text-gray-400" />
+                            <UploadCloud className="w-5 h-5 text-[#55626F] dark:text-[#97A3AF]" />
                           )}
-                          <span className="text-xs text-gray-500 mt-2">
+                          <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF] mt-1.5">
                             {isUploading ? "Uploading..." : "Add Images"}
                           </span>
                         </label>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        GitHub Link
-                      </label>
-                      <input
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Live Demo Link
-                      </label>
-                      <input
-                        value={liveUrl}
-                        onChange={(e) => setLiveUrl(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="flex items-center space-x-2 cursor-pointer p-4 border rounded-xl bg-gray-50 hover:bg-gray-100">
-                        <input
-                          type="checkbox"
-                          checked={featured}
-                          onChange={(e) => setFeatured(e.target.checked)}
-                          className="w-5 h-5 rounded text-gray-900 border-gray-300 focus:ring-gray-900"
-                        />
-                        <span className="font-bold">Feature on Homepage</span>
-                      </label>
-                    </div>
-
-                    <div className="md:col-span-2 border-t pt-6 mt-2">
-                      <h3 className="font-bold text-lg mb-4">
-                        Deep Dive Details
+                    {/* Deep Dive Details Section Header */}
+                    <div className="md:col-span-2 pt-4 border-t border-[#E5E4DE] dark:border-[#27313A]">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
+                        Editorial Case Study Breakdown
                       </h3>
+                      <p className="text-xs text-[#55626F] dark:text-[#97A3AF]">
+                        Structured case study details displayed on the single
+                        project view
+                      </p>
                     </div>
 
+                    {/* Full Description */}
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium mb-1 block">
-                        Full Description
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        System Architecture &amp; Implementation Details
                       </label>
                       <textarea
                         rows={5}
                         value={fullDesc}
                         onChange={(e) => setFullDesc(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        placeholder="Comprehensive breakdown of architectural choices, challenges, and solutions..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
+
+                    {/* Why I Built This */}
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium mb-1 block">
-                        Why I Built This
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Project Purpose &amp; Problem Statement
                       </label>
                       <textarea
                         rows={3}
                         value={whyBuilt}
                         onChange={(e) => setWhyBuilt(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        placeholder="What concrete real-world problem or business requirement prompted this build?"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
+
+                    {/* Lesson Learned / Mistake */}
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium mb-1 block">
-                        Mistake / Lesson Learned
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Engineering Trade-offs &amp; Lessons Learned
                       </label>
                       <textarea
                         rows={3}
                         value={lessonLearned}
                         onChange={(e) => setLessonLearned(e.target.value)}
-                        className="w-full border rounded-lg p-3 bg-gray-50"
+                        placeholder="Technical hurdles, compromises made, or performance trade-offs experienced..."
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
                   </div>
                 </form>
               </div>
 
-              <div className="p-6 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 rounded-b-xl shrink-0">
+              {/* Modal Footer */}
+              <div className="p-5 border-t border-[#E5E4DE] dark:border-[#27313A] flex justify-end space-x-3 bg-[#FBFBFA] dark:bg-[#13171B] rounded-b-lg shrink-0">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-6 py-2.5 hover:bg-gray-200 rounded-lg transition font-medium text-gray-700"
+                  className="px-4 py-2 rounded-md text-xs font-semibold border border-[#E5E4DE] dark:border-[#27313A] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
@@ -510,13 +807,37 @@ export default function AdminProjects() {
                   type="submit"
                   form="projectForm"
                   disabled={isUploading}
-                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition font-medium shadow-lg shadow-gray-200 disabled:opacity-50"
+                  className="px-5 py-2 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] disabled:opacity-50 cursor-pointer transition-colors shadow-xs"
                 >
-                  {editId ? "Update" : "Save"} Project
+                  {editId ? "Update Project" : "Publish Project"}
                 </button>
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.15 }}
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-xl text-xs font-medium flex items-center gap-2 border ${
+              toast.type === "error"
+                ? "bg-red-50 dark:bg-red-950/90 text-red-800 dark:text-red-200 border-red-200 dark:border-red-900"
+                : "bg-emerald-50 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900"
+            }`}
+          >
+            {toast.type === "error" ? (
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+            ) : (
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

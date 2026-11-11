@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mohamed Sharfiras — Technical Notes &amp; Architecture</title>
+    <link>https://sharfrasaqsan.vercel.app/blog</link>
+    <description>Observations and engineering strategies regarding frontend performance, enterprise intranet migrations, Core Web Vitals, and automation by Mohamed Sharfiras.</description>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 11 Nov 2026 05:00:00 GMT</lastBuildDate>
+    <atom:link href="https://sharfrasaqsan.vercel.app/rss.xml" rel="self" type="application/rss+xml"/>
+    
+    <item>
+      <title>WordPress vs Custom Development: What I Actually Use for Client Projects in 2026</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/Ckh6CeqiqDYeywtEx6TT</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/Ckh6CeqiqDYeywtEx6TT</guid>
+      <description>When to choose headless WordPress vs Next.js custom architecture for commercial and enterprise client systems.</description>
+      <category>Engineering</category>
+      <pubDate>Wed, 11 Nov 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>How I Build High-Converting Websites as a Developer, Not Just a Designer</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/PMEpikraHow948AXehE4</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/PMEpikraHow948AXehE4</guid>
+      <description>Engineering principles behind conversion rate optimization, page speed impact, and streamlined client acquisition funnels.</description>
+      <category>Performance</category>
+      <pubDate>Mon, 09 Nov 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>From Static Website to Full System: How I Add Automation to My Web Projects</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/RZ7k1CJZIHsbelpeEDxf</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/RZ7k1CJZIHsbelpeEDxf</guid>
+      <description>Connecting static platforms to automated CRM pipelines, webhooks, and backend notification services.</description>
+      <category>Automation</category>
+      <pubDate>Fri, 06 Nov 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>7 Frontend Mistakes That Are Killing Your Website Performance (And How to Fix Them)</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/sxP5sfpjgQT36gyq1r3W</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/sxP5sfpjgQT36gyq1r3W</guid>
+      <description>Practical debugging strategies for Cumulative Layout Shift, unoptimized JavaScript bundles, and main thread blocking.</description>
+      <category>Performance</category>
+      <pubDate>Tue, 03 Nov 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>Why Most Business Websites Fail in 2026 (And How to Fix Yours Fast)</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/Z4TtwbJlpi5LWfmyg9ob</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/Z4TtwbJlpi5LWfmyg9ob</guid>
+      <description>Analyzing common failure points in commercial web platforms and how structured technical SEO and speed restore ROI.</description>
+      <category>Strategy</category>
+      <pubDate>Sun, 01 Nov 2026 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
+

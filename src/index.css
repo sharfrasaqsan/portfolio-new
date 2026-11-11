@@ -4,11 +4,156 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* Editorial Color Tokens */
+  --color-page: #fbfbfa;
+  --color-page-dark: #13171b;
+
+  --color-surface: #ffffff;
+  --color-surface-dark: #1b2228;
+
+  --color-surface-muted: #f2f1ec;
+  --color-surface-muted-dark: #222b33;
+
+  --color-ink: #171f24;
+  --color-ink-dark: #f1f4f6;
+
+  --color-ink-muted: #55626f;
+  --color-ink-muted-dark: #97a3af;
+
+  --color-rule: #e5e4de;
+  --color-rule-dark: #27313a;
+
+  --color-cobalt: #1f51d0;
+  --color-cobalt-dark: #4f7ff7;
 }
 
 @layer base {
+  :root {
+    --bg-page: #fbfbfa;
+    --text-primary: #171f24;
+    --text-secondary: #55626f;
+    --border-subtle: #e5e4de;
+  }
+
+  .dark {
+    --bg-page: #13171b;
+    --text-primary: #f1f4f6;
+    --text-secondary: #97a3af;
+    --border-subtle: #27313a;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased transition-colors duration-300;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  /* Custom focus rings for accessible keyboard navigation */
+  :focus-visible {
+    outline: 2px solid #1f51d0;
+    outline-offset: 2px;
+  }
+
+  .dark :focus-visible {
+    outline-color: #4f7ff7;
+  }
+
+  ::selection {
+    background-color: #1f51d0;
+    color: #ffffff;
+  }
+
+  .dark ::selection {
+    background-color: #3867df;
+    color: #ffffff;
+  }
+}
+
+/* Fluid display headings */
+.fluid-hero {
+  font-size: clamp(2.25rem, 5vw + 1rem, 3.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.fluid-h1 {
+  font-size: clamp(1.85rem, 3.5vw + 0.8rem, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.fluid-h2 {
+  font-size: clamp(1.4rem, 2.2vw + 0.6rem, 1.85rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.fluid-subhead {
+  font-size: clamp(1.05rem, 1vw + 0.85rem, 1.25rem);
+  line-height: 1.55;
+}
+
+/* Reading container for editorial articles */
+.reading-measure {
+  max-width: 68ch;
+}
+
+/* Executive Print Stylesheet for PDF Resume & Case Studies */
+@media print {
+  header,
+  footer,
+  nav,
+  button,
+  .print\:hidden,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  article,
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+  }
+
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    font-family: monospace;
+    color: #555555;
+  }
+
+  a[href^="#"]:after,
+  a[href^="/"]:after {
+    content: "";
   }
 }
