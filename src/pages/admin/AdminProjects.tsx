@@ -29,6 +29,7 @@ import {
   ChevronUp,
   ChevronDown,
   Save,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
@@ -61,10 +62,16 @@ export default function AdminProjects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
-  // Manual Reorder Modal State
+  // Manual Archive Reorder Modal State
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [reorderList, setReorderList] = useState<any[]>([]);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Homepage & Hero Showcase Modal State
+  const [isHomeFeaturedModalOpen, setIsHomeFeaturedModalOpen] = useState(false);
+  const [homeFeaturedList, setHomeFeaturedList] = useState<any[]>([]);
+  const [heroProjectId, setHeroProjectId] = useState<string>("");
+  const [isSavingHomeOrder, setIsSavingHomeOrder] = useState(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,6 +97,8 @@ export default function AdminProjects() {
   const [liveUrl, setLiveUrl] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [featured, setFeatured] = useState(false);
+  const [isHero, setIsHero] = useState(false);
+  const [homeOrder, setHomeOrder] = useState<number | "">("");
   const [type, setType] = useState("Individual Project");
   const [order, setOrder] = useState<number | "">("");
 
@@ -179,6 +188,8 @@ export default function AdminProjects() {
         category: category.trim(),
         images,
         featured,
+        isHero,
+        homeOrder: homeOrder === "" ? null : Number(homeOrder),
         type,
         order: order === "" ? null : Number(order),
         image: images.length > 0 ? images[0] : "", // backwards compatibility
@@ -223,6 +234,8 @@ export default function AdminProjects() {
     setCategory(p.category || "Web App");
     setImages(p.images ? p.images : p.image ? [p.image] : []);
     setFeatured(p.featured || false);
+    setIsHero(p.isHero || false);
+    setHomeOrder(typeof p.homeOrder === "number" ? p.homeOrder : "");
     setType(p.type || "Individual Project");
     setOrder(typeof p.order === "number" ? p.order : "");
     setTechStack(p.techStack?.join(", ") || "");
@@ -255,6 +268,8 @@ export default function AdminProjects() {
     setCategory("Web App");
     setImages([]);
     setFeatured(false);
+    setIsHero(false);
+    setHomeOrder("");
     setType("Individual Project");
     setTechStack("");
     setGithubUrl("");
@@ -263,7 +278,7 @@ export default function AdminProjects() {
     setIsModalOpen(false);
   };
 
-  // Reorder Modal Actions
+  // Archive Reorder Modal Actions
   const openReorderModal = () => {
     const sorted = [...projects].sort(
       (a, b) => getEffectiveOrder(a) - getEffectiveOrder(b),
@@ -314,7 +329,7 @@ export default function AdminProjects() {
     }
   };
 
-  // Quick swap from project card
+  // Quick swap from project card on archive order
   const handleQuickShift = async (
     projectId: string,
     direction: "up" | "down",
@@ -349,6 +364,142 @@ export default function AdminProjects() {
     } catch (err: any) {
       console.error("Quick shift error:", err);
       showToast("Failed to reorder: " + err.message, "error");
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Homepage & Hero Showcase Modal Actions
+  // -------------------------------------------------------------
+  const openHomeFeaturedModal = () => {
+    // Current hero
+    const currentHero =
+      projects.find((p) => p.isHero)?.id ||
+      projects.find((p) => p.id === "MflCmhqBMJ5PDrz6H2DD")?.id ||
+      projects[0]?.id ||
+      "";
+    setHeroProjectId(currentHero);
+
+    // Current featured projects on homepage
+    const featuredList = projects
+      .filter((p) => p.featured)
+      .sort(
+        (a, b) =>
+          (typeof a.homeOrder === "number" ? a.homeOrder : 99) -
+          (typeof b.homeOrder === "number" ? b.homeOrder : 99),
+      );
+
+    if (featuredList.length >= 2) {
+      setHomeFeaturedList(featuredList);
+    } else {
+      // Preload curated 5 featured projects if none set yet
+      const defaultIds = [
+        "MflCmhqBMJ5PDrz6H2DD", // Atmospheric (Hero)
+        "8CQMnDasKgNgV38huMuj", // Fixxable
+        "TCxzhTSYCxuBr9q7EJUf", // Auction Solicitor
+        "0lqZjvslmHJncTTadAfw", // Meridian Law Group
+        "Z8kfLosbaaFhg7QnhCv5", // Webphoria
+      ];
+      const defaults = defaultIds
+        .map((id) => projects.find((p) => p.id === id))
+        .filter(Boolean);
+      setHomeFeaturedList(defaults);
+    }
+
+    setIsHomeFeaturedModalOpen(true);
+  };
+
+  const moveHomeInModal = (index: number, direction: "up" | "down") => {
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= homeFeaturedList.length) return;
+    const nextList = [...homeFeaturedList];
+    const temp = nextList[index];
+    nextList[index] = nextList[target];
+    nextList[target] = temp;
+    setHomeFeaturedList(nextList);
+  };
+
+  const removeFromHomeFeatured = (id: string) => {
+    if (homeFeaturedList.length <= 1) {
+      showToast("Keep at least 1 project in the homepage showcase.", "error");
+      return;
+    }
+    const next = homeFeaturedList.filter((p) => p.id !== id);
+    setHomeFeaturedList(next);
+    if (heroProjectId === id && next.length > 0) {
+      setHeroProjectId(next[0].id);
+    }
+  };
+
+  const addToHomeFeatured = (p: any) => {
+    if (homeFeaturedList.some((item) => item.id === p.id)) return;
+    setHomeFeaturedList([...homeFeaturedList, p]);
+  };
+
+  const handleSetHeroInModal = (id: string) => {
+    setHeroProjectId(id);
+    // If not in homeFeaturedList, add it at position 1
+    if (!homeFeaturedList.some((p) => p.id === id)) {
+      const p = projects.find((item) => item.id === id);
+      if (p) setHomeFeaturedList([p, ...homeFeaturedList]);
+    }
+  };
+
+  const resetHomeShowcaseDefaults = () => {
+    const defaultIds = [
+      "MflCmhqBMJ5PDrz6H2DD",
+      "8CQMnDasKgNgV38huMuj",
+      "TCxzhTSYCxuBr9q7EJUf",
+      "0lqZjvslmHJncTTadAfw",
+      "Z8kfLosbaaFhg7QnhCv5",
+    ];
+    const defaults = defaultIds
+      .map((id) => projects.find((p) => p.id === id))
+      .filter(Boolean);
+    setHomeFeaturedList(defaults);
+    setHeroProjectId("MflCmhqBMJ5PDrz6H2DD");
+  };
+
+  const handleSaveHomeShowcase = async () => {
+    setIsSavingHomeOrder(true);
+    try {
+      const batch = writeBatch(db);
+      const featuredIds = new Set(homeFeaturedList.map((p) => p.id));
+
+      // Update featured projects with their explicit homeOrder and isHero
+      homeFeaturedList.forEach((item, index) => {
+        const docRef = doc(db, "projects", item.id);
+        batch.update(docRef, {
+          featured: true,
+          isHero: item.id === heroProjectId,
+          homeOrder: index + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      // Update non-featured projects
+      projects.forEach((item) => {
+        if (!featuredIds.has(item.id)) {
+          const docRef = doc(db, "projects", item.id);
+          batch.update(docRef, {
+            featured: false,
+            isHero: false,
+            homeOrder: null,
+            updatedAt: serverTimestamp(),
+          });
+        }
+      });
+
+      await batch.commit();
+      invalidateContentCache();
+      showToast(
+        `Homepage & Hero showcase updated (${homeFeaturedList.length} featured).`,
+      );
+      setIsHomeFeaturedModalOpen(false);
+    } catch (err: any) {
+      console.error("Save home showcase error:", err);
+      showToast("Failed to save homepage showcase: " + err.message, "error");
+    } finally {
+      setIsSavingHomeOrder(false);
     }
   };
 
@@ -398,14 +549,26 @@ export default function AdminProjects() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          {/* Manual Order Trigger */}
+          {/* Homepage & Hero Showcase Manager */}
+          <button
+            type="button"
+            onClick={openHomeFeaturedModal}
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-md text-xs font-semibold border border-[#1F51D0]/30 dark:border-[#4F7FF7]/30 bg-[#1F51D0]/10 text-[#1F51D0] dark:text-[#4F7FF7] hover:bg-[#1F51D0]/20 transition-colors cursor-pointer shadow-xs"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>
+              Homepage &amp; Hero ({projects.filter((p) => p.featured).length})
+            </span>
+          </button>
+
+          {/* Manual Archive Order Trigger */}
           <button
             type="button"
             onClick={openReorderModal}
             className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-md text-xs font-semibold border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#171F24] text-[#171F24] dark:text-[#F1F4F6] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] transition-colors cursor-pointer shadow-xs"
           >
             <ListOrdered className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
-            <span>Manual Order</span>
+            <span>Archive Order</span>
           </button>
 
           <button
@@ -474,16 +637,9 @@ export default function AdminProjects() {
               key={p.id}
               className="bg-[#FFFFFF] dark:bg-[#171F24] rounded-lg border border-[#E5E4DE] dark:border-[#27313A] overflow-hidden flex flex-col relative group transition-colors"
             >
-              {p.featured && (
-                <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-[#1F51D0] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs z-10">
-                  <Star className="w-2.5 h-2.5 fill-white" />
-                  Featured
-                </span>
-              )}
-
-              {/* Thumbnail with Quick Order Badge & Swap Arrows */}
+              {/* Thumbnail with Quick Order Badge & Placement Tags */}
               <div className="h-36 bg-[#F2F1EC] dark:bg-[#222B33] relative overflow-hidden border-b border-[#E5E4DE] dark:border-[#27313A]">
-                {/* Visual Order Badge & Shift Controls */}
+                {/* Archive Order Badge & Shift Controls */}
                 <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1 bg-[#171F24]/90 dark:bg-[#F1F4F6]/90 text-white dark:text-[#171F24] pl-2 pr-1 py-1 rounded text-xs font-mono font-bold shadow-xs border border-white/10 dark:border-black/10">
                   <span>#{currentOrder}</span>
                   <div className="flex flex-col ml-1 border-l border-white/20 dark:border-black/20 pl-1">
@@ -494,7 +650,7 @@ export default function AdminProjects() {
                         e.stopPropagation();
                         handleQuickShift(p.id, "up");
                       }}
-                      title="Move up in display order"
+                      title="Move up in archive display order"
                       className="hover:text-[#4F7FF7] dark:hover:text-[#1F51D0] p-0.5 leading-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ChevronUp className="w-3 h-3" />
@@ -506,12 +662,27 @@ export default function AdminProjects() {
                         e.stopPropagation();
                         handleQuickShift(p.id, "down");
                       }}
-                      title="Move down in display order"
+                      title="Move down in archive display order"
                       className="hover:text-[#4F7FF7] dark:hover:text-[#1F51D0] p-0.5 leading-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ChevronDown className="w-3 h-3" />
                     </button>
                   </div>
+                </div>
+
+                {/* Hero / Homepage Featured Badges */}
+                <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
+                  {p.isHero ? (
+                    <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs">
+                      <Sparkles className="w-2.5 h-2.5 fill-white" />
+                      Hero Showcase
+                    </span>
+                  ) : p.featured ? (
+                    <span className="inline-flex items-center gap-1 bg-[#1F51D0] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-xs">
+                      <Star className="w-2.5 h-2.5 fill-white" />
+                      Home #{p.homeOrder ?? 1}
+                    </span>
+                  ) : null}
                 </div>
 
                 {p.images?.length > 0 || p.image ? (
@@ -554,6 +725,7 @@ export default function AdminProjects() {
                   {p.shortDesc || "No short summary provided."}
                 </p>
 
+                {/* Main Techs only */}
                 {(() => {
                   const mainTechs = extractMainTechs(p.techStack);
                   if (mainTechs.length === 0) return null;
@@ -572,7 +744,7 @@ export default function AdminProjects() {
                 })()}
               </div>
 
-              {/* Actions Bar (Clone removed per user request) */}
+              {/* Actions Bar (Clone removed) */}
               <div className="border-t border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]/50 flex divide-x divide-[#E5E4DE] dark:divide-[#27313A] text-xs">
                 <a
                   href={`/projects/${p.id}`}
@@ -630,7 +802,269 @@ export default function AdminProjects() {
         )}
       </div>
 
-      {/* Manual Project Reorder Modal */}
+      {/* ------------------------------------------------------------- */}
+      {/* Homepage & Hero Showcase Manager Modal */}
+      {/* ------------------------------------------------------------- */}
+      <AnimatePresence>
+        {isHomeFeaturedModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              className="bg-[#FFFFFF] dark:bg-[#171F24] border border-[#E5E4DE] dark:border-[#27313A] rounded-lg max-w-2xl w-full shadow-2xl my-8 relative flex flex-col max-h-[85vh] text-[#171F24] dark:text-[#F1F4F6]"
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-[#E5E4DE] dark:border-[#27313A] flex justify-between items-center sticky top-0 bg-[#FFFFFF] dark:bg-[#171F24] z-10 rounded-t-lg">
+                <div>
+                  <h2 className="text-base font-bold flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
+                    <span>Homepage &amp; Hero Showcase Manager</span>
+                  </h2>
+                  <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
+                    Designate your flagship Hero project and arrange the exact
+                    order of Selected Case Studies on the homepage.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsHomeFeaturedModalOpen(false)}
+                  className="p-1.5 rounded-md hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF] cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 overflow-y-auto space-y-6 flex-1">
+                {/* Hero Showcase Highlight Banner */}
+                <div className="p-4 rounded-lg border-2 border-purple-500/40 bg-purple-50/50 dark:bg-purple-950/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Hero Section Flagship Project</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400">
+                      Top preview card in homepage hero
+                    </span>
+                  </div>
+
+                  {(() => {
+                    const hero = projects.find((p) => p.id === heroProjectId);
+                    if (!hero) return null;
+                    return (
+                      <div className="flex items-center justify-between p-2.5 rounded-md bg-white dark:bg-[#171F24] border border-purple-200 dark:border-purple-900/50 gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-12 h-8 rounded bg-[#F2F1EC] dark:bg-[#222B33] overflow-hidden shrink-0 border border-[#E5E4DE] dark:border-[#27313A]">
+                            <img
+                              src={hero.images?.[0] || hero.image}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold truncate text-[#171F24] dark:text-[#F1F4F6]">
+                              {hero.title}
+                            </p>
+                            <p className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                              {hero.category} &bull;{" "}
+                              {extractMainTechs(hero.techStack).join(", ") ||
+                                "Web App"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-600 text-white shrink-0">
+                          Active Hero
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Homepage Selected Projects Ordering */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
+                      Selected Case Studies Order (Position #1 to #
+                      {homeFeaturedList.length})
+                    </h3>
+                    <span className="text-[11px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                      Top item appears first in showcase
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {homeFeaturedList.map((item, idx) => {
+                      const isCurrentHero = item.id === heroProjectId;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-3 rounded-md border transition-colors gap-3 ${
+                            isCurrentHero
+                              ? "border-purple-500/50 bg-purple-50/30 dark:bg-purple-950/10"
+                              : "border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]"
+                          }`}
+                        >
+                          {/* Position Badge & Item Details */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`font-mono text-xs font-bold w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                                isCurrentHero
+                                  ? "bg-purple-600 text-white"
+                                  : "bg-[#171F24] dark:bg-[#F1F4F6] text-white dark:text-[#171F24]"
+                              }`}
+                            >
+                              {idx + 1}
+                            </span>
+
+                            <div className="w-12 h-8 rounded bg-[#F2F1EC] dark:bg-[#222B33] overflow-hidden shrink-0 border border-[#E5E4DE] dark:border-[#27313A]">
+                              <img
+                                src={item.images?.[0] || item.image}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold truncate text-[#171F24] dark:text-[#F1F4F6]">
+                                  {item.title}
+                                </p>
+                                {isCurrentHero && (
+                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-600 text-white shrink-0">
+                                    Hero
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF]">
+                                {extractMainTechs(item.techStack).join(", ") ||
+                                  item.category}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Quick Action Controls */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {!isCurrentHero && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetHeroInModal(item.id)}
+                                className="text-[10px] font-mono font-semibold px-2 py-1 rounded border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/50 cursor-pointer"
+                                title="Set as Hero preview project"
+                              >
+                                Set as Hero
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => moveHomeInModal(idx, "up")}
+                              className="p-1.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-white dark:bg-[#171F24] text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                              title="Move Up in Homepage Order"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === homeFeaturedList.length - 1}
+                              onClick={() => moveHomeInModal(idx, "down")}
+                              className="p-1.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-white dark:bg-[#171F24] text-[#55626F] dark:text-[#97A3AF] hover:text-[#1F51D0] dark:hover:text-[#4F7FF7] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                              title="Move Down in Homepage Order"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeFromHomeFeatured(item.id)}
+                              className="p-1.5 rounded border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                              title="Remove from Homepage"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Add Projects to Homepage Showcase */}
+                {projects.filter(
+                  (p) => !homeFeaturedList.some((item) => item.id === p.id),
+                ).length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-dashed border-[#E5E4DE] dark:border-[#27313A]">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[#55626F] dark:text-[#97A3AF] block">
+                      Add other projects to homepage showcase:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {projects
+                        .filter(
+                          (p) =>
+                            !homeFeaturedList.some((item) => item.id === p.id),
+                        )
+                        .map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => addToHomeFeatured(p)}
+                            className="text-xs font-mono px-2.5 py-1.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] text-[#171F24] dark:text-[#F1F4F6] hover:border-[#1F51D0] dark:hover:border-[#4F7FF7] transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Plus className="w-3 h-3 text-[#1F51D0] dark:text-[#4F7FF7]" />
+                            <span>{p.title}</span>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-[#E5E4DE] dark:border-[#27313A] flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#FBFBFA] dark:bg-[#13171B] rounded-b-lg shrink-0">
+                <button
+                  type="button"
+                  onClick={resetHomeShowcaseDefaults}
+                  className="text-xs font-mono text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6] underline cursor-pointer"
+                >
+                  Reset to Curated Default Showcase
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsHomeFeaturedModalOpen(false)}
+                    className="px-3.5 py-2 rounded-md text-xs font-semibold border border-[#E5E4DE] dark:border-[#27313A] text-[#55626F] dark:text-[#97A3AF] hover:bg-[#F2F1EC] dark:hover:bg-[#222B33] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSavingHomeOrder}
+                    onClick={handleSaveHomeShowcase}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-[#1F51D0] dark:bg-[#4F7FF7] text-white hover:bg-[#1942AA] dark:hover:bg-[#3D6CE5] disabled:opacity-50 cursor-pointer shadow-xs"
+                  >
+                    {isSavingHomeOrder ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving Showcase...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Homepage &amp; Hero Order</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Manual Archive Reorder Modal */}
+      {/* ------------------------------------------------------------- */}
       <AnimatePresence>
         {isOrderModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto">
@@ -645,11 +1079,11 @@ export default function AdminProjects() {
                 <div>
                   <h2 className="text-base font-bold flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-[#1F51D0] dark:text-[#4F7FF7]" />
-                    <span>Manual Project Ordering</span>
+                    <span>Manual Archive Project Ordering</span>
                   </h2>
                   <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
-                    Move projects up/down to configure the sequence on your live
-                    portfolio (#01 – #{reorderList.length}).
+                    Move projects up/down to configure the sequence on your
+                    archive portfolio (#01 – #{reorderList.length}).
                   </p>
                 </div>
                 <button
@@ -761,7 +1195,7 @@ export default function AdminProjects() {
                     ) : (
                       <>
                         <Save className="w-3.5 h-3.5" />
-                        <span>Save Order to Database</span>
+                        <span>Save Archive Order</span>
                       </>
                     )}
                   </button>
@@ -772,7 +1206,9 @@ export default function AdminProjects() {
         )}
       </AnimatePresence>
 
+      {/* ------------------------------------------------------------- */}
       {/* Edit / Create Project Modal */}
+      {/* ------------------------------------------------------------- */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex justify-center items-center p-4 overflow-y-auto">
@@ -868,10 +1304,10 @@ export default function AdminProjects() {
                       />
                     </div>
 
-                    {/* Display Order Priority */}
+                    {/* Display Order Priority (Archive Page) */}
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
-                        Display Order Priority (#1 – #12)
+                        Archive Order Priority (#1 – #12)
                       </label>
                       <input
                         type="number"
@@ -912,19 +1348,56 @@ export default function AdminProjects() {
                       </select>
                     </div>
 
-                    {/* Featured Toggle */}
-                    <div className="md:col-span-2">
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] w-full">
+                    {/* Homepage & Hero Placement Options */}
+                    <div className="md:col-span-2 space-y-3 p-3.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B]">
+                      <label className="flex items-center space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={featured}
                           onChange={(e) => setFeatured(e.target.checked)}
                           className="rounded border-[#E5E4DE] dark:border-[#27313A] text-[#1F51D0] focus:ring-[#1F51D0] w-4 h-4 cursor-pointer"
                         />
-                        <span className="text-xs font-medium text-[#171F24] dark:text-[#F1F4F6]">
+                        <span className="text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6]">
                           Feature on Homepage Selected Work
                         </span>
                       </label>
+
+                      {featured && (
+                        <div className="pt-3 border-t border-[#E5E4DE] dark:border-[#27313A] grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isHero}
+                              onChange={(e) => setIsHero(e.target.checked)}
+                              className="rounded border-[#E5E4DE] dark:border-[#27313A] text-purple-600 focus:ring-purple-600 w-4 h-4 cursor-pointer"
+                            />
+                            <span className="text-xs font-medium text-[#171F24] dark:text-[#F1F4F6]">
+                              ★ Designate as Hero Showcase Project
+                            </span>
+                          </label>
+
+                          <div>
+                            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1 text-[#55626F] dark:text-[#97A3AF]">
+                              Homepage Order Position (1, 2, 3...)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={homeOrder}
+                              onChange={(e) =>
+                                setHomeOrder(
+                                  e.target.value === ""
+                                    ? ""
+                                    : parseInt(e.target.value, 10),
+                                )
+                              }
+                              placeholder="e.g. 1"
+                              className="w-full px-3 py-1.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-white dark:bg-[#171F24] text-xs focus:outline-none focus:ring-1 focus:ring-[#1F51D0]"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tech Stack */}
@@ -936,7 +1409,7 @@ export default function AdminProjects() {
                         required
                         value={techStack}
                         onChange={(e) => setTechStack(e.target.value)}
-                        placeholder="React, TypeScript, Tailwind CSS, Vite"
+                        placeholder="React, TypeScript, Next.js, Node.js"
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>

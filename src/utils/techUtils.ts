@@ -54,3 +54,4 @@ export const extractMainTechs = (techStack: any): MainTech[] => {
 
   return result;
 };
+

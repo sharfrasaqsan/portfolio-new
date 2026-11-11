@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
@@ -13,6 +13,7 @@ import {
   Clock,
   Calendar,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { CardSkeleton } from "../../components/Skeleton";
 import { CoreWebVitalsInspector } from "../../components/CoreWebVitalsInspector";
@@ -59,33 +60,68 @@ const Home = () => {
     };
   }, []);
 
-  // Filter 4 high-quality representative projects across different types
-  const selectedProjects =
-    projects.length > 0
-      ? (() => {
-          const atmospheric = projects.find(
-            (p) =>
-              p.title?.includes("Atmospheric") ||
-              p.id === "MflCmhqBMJ5PDrz6H2DD",
-          );
-          const commercial = projects.filter(
-            (p) => p.type === "Company Project" && p.id !== atmospheric?.id,
-          );
-          const others = projects.filter(
-            (p) =>
-              p.id !== atmospheric?.id &&
-              !commercial.some((c) => c.id === p.id),
-          );
+  // Dedicated Hero Project Preview (controlled via admin isHero: true, or top homeOrder featured project)
+  const heroProject = useMemo(() => {
+    if (projects.length === 0) return null;
+    // 1. Explicitly designated hero project
+    const explicitHero = projects.find((p) => p.isHero);
+    if (explicitHero) return explicitHero;
+    // 2. Top featured project by homeOrder
+    const topFeatured = projects
+      .filter((p) => p.featured)
+      .sort(
+        (a, b) =>
+          (typeof a.homeOrder === "number" ? a.homeOrder : 99) -
+          (typeof b.homeOrder === "number" ? b.homeOrder : 99),
+      )[0];
+    if (topFeatured) return topFeatured;
+    // 3. Fallback to Atmospheric Intelligence or first available project
+    return (
+      projects.find((p) => p.id === "MflCmhqBMJ5PDrz6H2DD") || projects[0]
+    );
+  }, [projects]);
 
-          const list: any[] = [];
-          if (atmospheric) list.push(atmospheric);
-          if (commercial[0]) list.push(commercial[0]);
-          if (commercial[1]) list.push(commercial[1]);
-          if (others[0]) list.push(others[0]);
+  // Selected Case Studies on Homepage (sorted by admin homeOrder)
+  const selectedProjects = useMemo(() => {
+    if (projects.length === 0) return [];
 
-          return list.length >= 3 ? list : projects.slice(0, 4);
-        })()
-      : [];
+    // Filter projects explicitly marked as featured on homepage
+    const featuredProjects = projects
+      .filter((p) => p.featured)
+      .sort(
+        (a, b) =>
+          (typeof a.homeOrder === "number" ? a.homeOrder : 99) -
+          (typeof b.homeOrder === "number" ? b.homeOrder : 99),
+      );
+
+    // If at least 2 are marked as featured, use them
+    if (featuredProjects.length >= 2) {
+      return featuredProjects;
+    }
+
+    // Default fallback if not yet configured in admin
+    const atmospheric = projects.find(
+      (p) =>
+        p.title?.includes("Atmospheric") ||
+        p.id === "MflCmhqBMJ5PDrz6H2DD",
+    );
+    const commercial = projects.filter(
+      (p) => p.type === "Company Project" && p.id !== atmospheric?.id,
+    );
+    const others = projects.filter(
+      (p) =>
+        p.id !== atmospheric?.id &&
+        !commercial.some((c) => c.id === p.id),
+    );
+
+    const list: any[] = [];
+    if (atmospheric) list.push(atmospheric);
+    if (commercial[0]) list.push(commercial[0]);
+    if (commercial[1]) list.push(commercial[1]);
+    if (others[0]) list.push(others[0]);
+
+    return list.length >= 3 ? list : projects.slice(0, 4);
+  }, [projects]);
 
   const canonicalUrl = absoluteUrl("/");
 
@@ -184,50 +220,66 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Meaningful Project Preview in Hero Layout (Atmospheric Intelligence) */}
+          {/* Meaningful Project Preview in Hero Layout (Dynamic from Admin) */}
           <div className="lg:col-span-5">
-            <div className="rounded-lg border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] p-4 sm:p-5 space-y-3.5 shadow-sm hover:border-[#1F51D0]/40 transition-colors">
-              <div className="flex items-center justify-between text-xs pb-2.5 border-b border-[#E5E4DE] dark:border-[#27313A]">
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[#1F51D0] dark:text-[#4F7FF7] font-semibold">
-                  Featured Case Study
-                </span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]">
-                  React &amp; TypeScript
-                </span>
-              </div>
+            {heroProject ? (
+              <div className="rounded-lg border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] p-4 sm:p-5 space-y-3.5 shadow-sm hover:border-[#1F51D0]/40 transition-colors">
+                <div className="flex items-center justify-between text-xs pb-2.5 border-b border-[#E5E4DE] dark:border-[#27313A]">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-[#1F51D0] dark:text-[#4F7FF7] font-semibold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#1F51D0] dark:text-[#4F7FF7]" />
+                    <span>Featured Case Study</span>
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]">
+                    {extractMainTechs(heroProject.techStack)
+                      .slice(0, 2)
+                      .join(" & ") ||
+                      heroProject.category ||
+                      "Web Platform"}
+                  </span>
+                </div>
 
-              <div className="aspect-[16/10] overflow-hidden rounded-md bg-[#F2F1EC] dark:bg-[#13171B] border border-[#E5E4DE] dark:border-[#27313A]">
-                <img
-                  src="https://res.cloudinary.com/sharfras/image/upload/v1778568121/app7cdpfw8szympmfqtr.webp"
-                  alt="Atmospheric Intelligence weather telemetry dashboard screenshot"
-                  width={640}
-                  height={400}
-                  decoding="async"
-                  loading="eager"
-                  className="w-full h-full object-cover object-top"
-                />
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-bold text-[#171F24] dark:text-[#F1F4F6]">
-                    Atmospheric Intelligence
-                  </h2>
+                <div className="aspect-[16/10] overflow-hidden rounded-md bg-[#F2F1EC] dark:bg-[#13171B] border border-[#E5E4DE] dark:border-[#27313A]">
                   <Link
-                    to="/projects/MflCmhqBMJ5PDrz6H2DD"
-                    className="text-xs text-[#1F51D0] dark:text-[#4F7FF7] font-semibold hover:underline inline-flex items-center gap-1"
+                    to={`/projects/${heroProject.id}`}
+                    aria-label={`Inspect ${heroProject.title} case study`}
                   >
-                    <span>Inspect</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                    <img
+                      src={resolveImageUrl(
+                        heroProject.images?.[0] || heroProject.image,
+                      )}
+                      alt={`${heroProject.title} interface preview`}
+                      width={640}
+                      height={400}
+                      decoding="async"
+                      loading="eager"
+                      className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-300"
+                    />
                   </Link>
                 </div>
-                <p className="text-xs text-[#55626F] dark:text-[#97A3AF] leading-relaxed line-clamp-2">
-                  Real-time environmental telemetry platform with OpenWeather
-                  API synchronization, dynamic theme gradients, and isolated
-                  state architecture.
-                </p>
+
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h2 className="text-sm sm:text-base font-bold text-[#171F24] dark:text-[#F1F4F6] hover:underline">
+                      <Link to={`/projects/${heroProject.id}`}>
+                        {heroProject.title}
+                      </Link>
+                    </h2>
+                    <Link
+                      to={`/projects/${heroProject.id}`}
+                      className="text-xs text-[#1F51D0] dark:text-[#4F7FF7] font-semibold hover:underline inline-flex items-center gap-1 shrink-0"
+                    >
+                      <span>Inspect</span>
+                      <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                    </Link>
+                  </div>
+                  <p className="text-xs text-[#55626F] dark:text-[#97A3AF] leading-relaxed line-clamp-2">
+                    {heroProject.shortDesc}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="h-64 rounded-lg bg-[#F2F1EC] dark:bg-[#1B2228] animate-pulse" />
+            )}
           </div>
         </div>
 
