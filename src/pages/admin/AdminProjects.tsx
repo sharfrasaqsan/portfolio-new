@@ -857,7 +857,7 @@ export default function AdminProjects() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Hero Section Flagship Project</span>
+                      <span>Hero Project</span>
                     </span>
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -1398,7 +1398,7 @@ export default function AdminProjects() {
                           />
                           <div>
                             <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 block">
-                              ★ Flagship Hero Showcase Project
+                              ★ Hero Project
                             </span>
                             <span className="text-[11px] text-[#55626F] dark:text-[#97A3AF] block">
                               Exclusive top header preview
