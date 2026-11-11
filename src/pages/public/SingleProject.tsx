@@ -23,6 +23,7 @@ import {
   resolveImageUrl,
 } from "../../utils/seo";
 import { getCachedProjects } from "../../utils/dataCache";
+import { extractMainTechs } from "../../utils/techUtils";
 
 const SingleProject = () => {
   const { id } = useParams<{ id: string }>();
@@ -347,13 +348,18 @@ const SingleProject = () => {
                   </div>
                 )}
 
-                {project.techStack && project.techStack.length > 0 && (
+                {project.techStack && (
                   <div className="space-y-1.5">
                     <p className="text-[11px] font-mono uppercase text-[#55626F] dark:text-[#97A3AF]">
                       Technology Stack
                     </p>
                     <div className="flex flex-wrap gap-1">
-                      {project.techStack.map((tech: string) => (
+                      {(extractMainTechs(project.techStack).length > 0
+                        ? extractMainTechs(project.techStack)
+                        : Array.isArray(project.techStack)
+                          ? project.techStack
+                          : []
+                      ).map((tech: string) => (
                         <span
                           key={tech}
                           className="text-xs font-mono px-2 py-0.5 rounded-sm bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"

@@ -23,6 +23,7 @@ import {
   calculateReadingTime,
 } from "../../utils/seo";
 import { getCachedProjects, getCachedBlogs } from "../../utils/dataCache";
+import { extractMainTechs } from "../../utils/techUtils";
 
 const Home = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -350,18 +351,22 @@ const Home = () => {
                         {p.shortDesc}
                       </p>
 
-                      {p.techStack && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {p.techStack.slice(0, 5).map((tech: string) => (
-                            <span
-                              key={tech}
-                              className="text-[11px] font-mono px-2 py-0.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#55626F] dark:text-[#97A3AF]"
-                            >
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {(() => {
+                        const mainTechs = extractMainTechs(p.techStack);
+                        if (mainTechs.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {mainTechs.map((tech) => (
+                              <span
+                                key={tech}
+                                className="text-[11px] font-mono px-2 py-0.5 rounded border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#55626F] dark:text-[#97A3AF]"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="pt-4 border-t border-[#E5E4DE] dark:border-[#27313A] flex items-center justify-between">

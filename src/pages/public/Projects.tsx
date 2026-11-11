@@ -18,6 +18,7 @@ import {
   buildBreadcrumbsSchema,
 } from "../../utils/seo";
 import { getCachedProjects } from "../../utils/dataCache";
+import { extractMainTechs } from "../../utils/techUtils";
 
 const CATEGORIES = [
   { id: "all", label: "All Projects" },
@@ -78,39 +79,13 @@ const Projects = () => {
     };
   }, []);
 
-  // Compute normalized popular tech stacks dynamically across the project catalog
+  // Extract ONLY main technologies across the project catalog for the filter bar
   const popularTechList = useMemo(() => {
     const map: Record<string, number> = {};
     projects.forEach((p) => {
-      const list: string[] = Array.isArray(p.techStack)
-        ? p.techStack
-        : typeof p.techStack === "string"
-          ? p.techStack.split(",").map((s: string) => s.trim()).filter(Boolean)
-          : [];
-
-      list.forEach((rawTech) => {
-        let name = rawTech.trim();
-        const lower = name.toLowerCase();
-        if (lower === "react" || lower === "react.js") name = "React";
-        else if (lower === "next.js" || lower === "next" || lower === "nextjs")
-          name = "Next.js";
-        else if (lower === "typescript" || lower === "ts") name = "TypeScript";
-        else if (lower === "wordpress" || lower === "wp") name = "WordPress";
-        else if (lower.includes("gohighlevel") || lower.includes("ghl"))
-          name = "GoHighLevel (GHL)";
-        else if (lower === "php") name = "PHP";
-        else if (lower === "supabase") name = "Supabase";
-        else if (lower === "firebase" || lower === "firestore")
-          name = "Firebase";
-        else if (lower === "node.js" || lower === "node" || lower === "nodejs")
-          name = "Node.js";
-        else if (lower.includes("tailwind")) name = "Tailwind CSS";
-        else if (lower === "elementor") name = "Elementor";
-        else if (lower === "mysql") name = "MySQL";
-        else if (lower === "mongodb") name = "MongoDB";
-        else if (lower === "bootstrap") name = "Bootstrap";
-
-        map[name] = (map[name] || 0) + 1;
+      const mainTechs = extractMainTechs(p.techStack);
+      mainTechs.forEach((tech) => {
+        map[tech] = (map[tech] || 0) + 1;
       });
     });
 
@@ -119,28 +94,13 @@ const Projects = () => {
       .map(([name, count]) => ({ name, count }));
   }, [projects]);
 
-  // Normalize project tech list for filtering
+  // Match against project's main technologies
   const matchesTechFilter = (p: any, targetTech: string) => {
     if (targetTech === "all") return true;
-    const list: string[] = Array.isArray(p.techStack)
-      ? p.techStack
-      : typeof p.techStack === "string"
-        ? p.techStack.split(",").map((s: string) => s.trim()).filter(Boolean)
-        : [];
-    const target = targetTech.toLowerCase();
-    return list.some((item) => {
-      const it = item.toLowerCase();
-      if (target === "gohighlevel (ghl)") {
-        return it.includes("gohighlevel") || it.includes("ghl");
-      }
-      if (target === "firebase") {
-        return it.includes("firebase") || it.includes("firestore");
-      }
-      if (target === "tailwind css") {
-        return it.includes("tailwind");
-      }
-      return it.includes(target) || target.includes(it);
-    });
+    const mainTechs = extractMainTechs(p.techStack);
+    return mainTechs.some(
+      (t) => t.toLowerCase() === targetTech.toLowerCase(),
+    );
   };
 
   // 1. Sort projects according to curated order or user selection
@@ -630,18 +590,13 @@ const Projects = () => {
                         {p.shortDesc}
                       </p>
 
-                      {/* Interactive Tech Stack Tags on Card */}
-                      {p.techStack && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {(Array.isArray(p.techStack)
-                            ? p.techStack
-                            : typeof p.techStack === "string"
-                              ? p.techStack.split(",")
-                              : []
-                          )
-                            .slice(0, 5)
-                            .map((rawTech: string) => {
-                              const tech = rawTech.trim();
+                      {/* Interactive Main Tech Stack Tags on Card */}
+                      {(() => {
+                        const cardMainTechs = extractMainTechs(p.techStack);
+                        if (cardMainTechs.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {cardMainTechs.map((tech) => {
                               const isCurrentFilter =
                                 currentTech.toLowerCase() ===
                                 tech.toLowerCase();
@@ -661,8 +616,9 @@ const Projects = () => {
                                 </button>
                               );
                             })}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 

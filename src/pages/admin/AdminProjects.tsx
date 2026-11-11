@@ -33,6 +33,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import { invalidateContentCache } from "../../utils/dataCache";
+import { extractMainTechs } from "../../utils/techUtils";
 
 const CURATED_DEFAULT_ORDER: Record<string, number> = {
   MflCmhqBMJ5PDrz6H2DD: 1, // Atmospheric Intelligence
@@ -553,23 +554,22 @@ export default function AdminProjects() {
                   {p.shortDesc || "No short summary provided."}
                 </p>
 
-                {p.techStack?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {p.techStack.slice(0, 3).map((t: string) => (
-                      <span
-                        key={t}
-                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                    {p.techStack.length > 3 && (
-                      <span className="text-[10px] font-mono text-[#55626F] dark:text-[#97A3AF] self-center">
-                        +{p.techStack.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  const mainTechs = extractMainTechs(p.techStack);
+                  if (mainTechs.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {mainTechs.map((t) => (
+                        <span
+                          key={t}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F2F1EC] dark:bg-[#222B33] text-[#55626F] dark:text-[#97A3AF]"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Actions Bar (Clone removed per user request) */}
