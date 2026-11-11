@@ -8,7 +8,10 @@ import {
   resolveImageUrl,
   buildBreadcrumbsSchema,
 } from "../../utils/seo";
-import { getCachedProjects } from "../../utils/dataCache";
+import {
+  getCachedProjects,
+  sortProjectsByPriority,
+} from "../../utils/dataCache";
 
 const CATEGORIES = [
   { id: "all", label: "All Projects" },
@@ -31,9 +34,9 @@ const Projects = () => {
     let isMounted = true;
     const fetchProjects = async () => {
       try {
-        const list = await getCachedProjects();
+        const list = await getCachedProjects(true);
         if (isMounted) {
-          setProjects(list);
+          setProjects(sortProjectsByPriority(list));
         }
       } catch (err) {
         console.error("Projects fetch error:", err);
