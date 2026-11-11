@@ -58,6 +58,7 @@ export default function AdminProjects() {
   const [images, setImages] = useState<string[]>([]);
   const [featured, setFeatured] = useState(false);
   const [type, setType] = useState("Individual Project");
+  const [order, setOrder] = useState<number | "">("");
 
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -145,6 +146,7 @@ export default function AdminProjects() {
         images,
         featured,
         type,
+        order: order === "" ? null : Number(order),
         image: images.length > 0 ? images[0] : "", // backwards compatibility
         techStack: techStack
           .split(",")
@@ -188,6 +190,7 @@ export default function AdminProjects() {
     setImages(p.images ? p.images : p.image ? [p.image] : []);
     setFeatured(p.featured || false);
     setType(p.type || "Individual Project");
+    setOrder(typeof p.order === "number" ? p.order : "");
     setTechStack(p.techStack?.join(", ") || "");
     setGithubUrl(p.githubUrl || "");
     setLiveUrl(p.liveUrl || "");
@@ -243,6 +246,7 @@ export default function AdminProjects() {
     setTechStack("");
     setGithubUrl("");
     setLiveUrl("");
+    setOrder("");
     setIsModalOpen(false);
   };
 
@@ -595,6 +599,28 @@ export default function AdminProjects() {
                         value={timeToBuild}
                         onChange={(e) => setTimeToBuild(e.target.value)}
                         placeholder="e.g. 4 months, 2 weeks"
+                        className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                      />
+                    </div>
+
+                    {/* Display Order Priority */}
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider block mb-1 text-[#171F24] dark:text-[#F1F4F6]">
+                        Display Order Priority (#1 – #12)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={order}
+                        onChange={(e) =>
+                          setOrder(
+                            e.target.value === ""
+                              ? ""
+                              : parseInt(e.target.value, 10),
+                          )
+                        }
+                        placeholder="e.g. 1"
                         className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                       />
                     </div>
