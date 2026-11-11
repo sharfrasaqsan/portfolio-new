@@ -268,11 +268,13 @@ const SingleBlog = () => {
                   <span>&bull;</span>
                   <span className="text-[11px] text-[#55626F] dark:text-[#97A3AF]">
                     Updated:{" "}
-                    {blog.updatedAt.toDate().toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    {typeof blog.updatedAt?.toDate === "function"
+                      ? blog.updatedAt.toDate().toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Recently"}
                   </span>
                 </>
               )}

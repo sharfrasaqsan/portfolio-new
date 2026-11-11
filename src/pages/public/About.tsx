@@ -213,7 +213,7 @@ const About = () => {
   return (
     <div className="space-y-16 max-w-4xl mx-auto">
       <Helmet>
-        <title>About Mohamed Sharfiras — Web &amp; Frontend Engineer</title>
+        <title>About Mohamed Sharfiras — Web Developer</title>
         <meta
           name="description"
           content="Professional background of Mohamed Sharfiras: 4+ years of experience across enterprise intranet migrations (HSBC), high-traffic eCommerce (Oscar Wylee), React, Next.js, and Technical SEO."
@@ -223,7 +223,7 @@ const About = () => {
         <meta property="og:url" content={canonicalUrl} />
         <meta
           property="og:title"
-          content="About Mohamed Sharfiras — Web &amp; Frontend Engineer"
+          content="About Mohamed Sharfiras — Web Developer"
         />
         <meta
           property="og:description"
@@ -254,7 +254,7 @@ const About = () => {
             About Mohamed Sharfiras
           </h1>
           <p className="text-sm sm:text-base text-[#55626F] dark:text-[#97A3AF] font-mono">
-            Web Developer &bull; Enterprise Web, Frontend &amp; SEO
+            Web Developer &bull; Enterprise Web, Applications &amp; SEO
           </p>
         </div>
 
@@ -608,8 +608,8 @@ const About = () => {
                 Colombo &amp; Mullipothana, Sri Lanka
               </strong>
               .<br />
-              Available for full-time engineering roles, enterprise intranet
-              contracts, and remote collaboration worldwide.
+              Available for specialized intranet consulting, client projects,
+              and remote collaboration worldwide.
             </p>
           </div>
         </div>

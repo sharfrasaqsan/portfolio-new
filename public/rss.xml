@@ -9,6 +9,42 @@
     <atom:link href="https://sharfrasaqsan.vercel.app/rss.xml" rel="self" type="application/rss+xml"/>
     
     <item>
+      <title>Deconstructing Core Web Vitals: How We Cut LCP from 4.2s to 1.1s on High-Traffic eCommerce</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/core-web-vitals-ecommerce-optimization</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/core-web-vitals-ecommerce-optimization</guid>
+      <description>A practical, production-tested teardown of optimizing Largest Contentful Paint, Cumulative Layout Shift, and Interaction to Next Paint on high-traffic multi-region eCommerce stores.</description>
+      <category>Performance</category>
+      <pubDate>Tue, 10 Nov 2026 08:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>Building Bulletproof Client Forms: Webhooks, Honeypots, and CRM Sync Without Annoying Users</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/zero-spam-resilient-client-forms</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/zero-spam-resilient-client-forms</guid>
+      <description>Why traditional CAPTCHAs hurt conversion rates by up to 15%, and how to build resilient, spam-proof lead intake pipelines using invisible honeypots, time-stamped validation, and serverless webhook dispatchers.</description>
+      <category>Engineering</category>
+      <pubDate>Mon, 09 Nov 2026 09:30:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>Next.js App Router vs Vite SPA in 2026: A Practical Architecture Decision Matrix</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/nextjs-app-router-vs-vite-spa</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/nextjs-app-router-vs-vite-spa</guid>
+      <description>Server-Side Rendering isn't always the answer. An honest, production-tested engineering comparison of when to reach for Next.js App Router versus when a static Vite SPA offers 10x better developer velocity and lower operating costs.</description>
+      <category>Web Development</category>
+      <pubDate>Sun, 08 Nov 2026 11:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title>Lessons from Enterprise Intranet Migrations: Governance, Zero Downtime, and Managing 1,000+ Internal Pages</title>
+      <link>https://sharfrasaqsan.vercel.app/blog/enterprise-intranet-migration-lessons</link>
+      <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/enterprise-intranet-migration-lessons</guid>
+      <description>Key engineering strategies learned from managing large-scale corporate intranet migrations: maintaining strict design system governance, ensuring WCAG 2.1 AA accessibility, and preventing broken link catastrophes.</description>
+      <category>Architecture</category>
+      <pubDate>Fri, 06 Nov 2026 10:00:00 GMT</pubDate>
+    </item>
+
+    <item>
       <title>WordPress vs Custom Development: What I Actually Use for Client Projects in 2026</title>
       <link>https://sharfrasaqsan.vercel.app/blog/Ckh6CeqiqDYeywtEx6TT</link>
       <guid isPermaLink="true">https://sharfrasaqsan.vercel.app/blog/Ckh6CeqiqDYeywtEx6TT</guid>

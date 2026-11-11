@@ -7,9 +7,11 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 import axios from "axios";
 import { db } from "../../firebase/config";
+import { INITIAL_BLOGS } from "../../data/blogsData";
 import {
   Plus,
   Edit2,
@@ -70,9 +72,57 @@ export default function AdminBlogs() {
   };
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "blogs"), (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setBlogs(data);
+    const unsub = onSnapshot(collection(db, "blogs"), async (snap) => {
+      const firestoreData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const existingIds = new Set(firestoreData.map((d) => d.id));
+
+      // Merge enriched initial blogs with Firestore records
+      const mergedMap = new Map<string, any>();
+      INITIAL_BLOGS.forEach((b) => mergedMap.set(b.id, b));
+      firestoreData.forEach((d) => {
+        mergedMap.set(d.id, {
+          ...(mergedMap.get(d.id) || {}),
+          ...d,
+        });
+      });
+
+      const allMerged = Array.from(mergedMap.values()).sort((a, b) => {
+        const timeA = a.createdAt?.toDate
+          ? a.createdAt.toDate().getTime()
+          : a.createdAt?.seconds
+            ? a.createdAt.seconds * 1000
+            : 0;
+        const timeB = b.createdAt?.toDate
+          ? b.createdAt.toDate().getTime()
+          : b.createdAt?.seconds
+            ? b.createdAt.seconds * 1000
+            : 0;
+        return timeB - timeA;
+      });
+
+      setBlogs(allMerged);
+
+      // Auto-populate missing initial articles to Firestore if authenticated admin
+      const missing = INITIAL_BLOGS.filter((b) => !existingIds.has(b.id));
+      if (missing.length > 0) {
+        for (const mb of missing) {
+          try {
+            await setDoc(doc(db, "blogs", mb.id), {
+              title: mb.title,
+              category: mb.category,
+              excerpt: mb.excerpt,
+              content: mb.content,
+              status: mb.status,
+              coverImage: mb.coverImage,
+              images: mb.images,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          } catch (e) {
+            console.warn("Auto-syncing article to Firestore pending:", mb.id, e);
+          }
+        }
+      }
     });
     return () => unsub();
   }, []);

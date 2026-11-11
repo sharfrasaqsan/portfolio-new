@@ -145,8 +145,32 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://sharfrasaqsan.vercel.app/blog/core-web-vitals-ecommerce-optimization</loc>
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sharfrasaqsan.vercel.app/blog/zero-spam-resilient-client-forms</loc>
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sharfrasaqsan.vercel.app/blog/nextjs-app-router-vs-vite-spa</loc>
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sharfrasaqsan.vercel.app/blog/enterprise-intranet-migration-lessons</loc>
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://sharfrasaqsan.vercel.app/blog/sxP5sfpjgQT36gyq1r3W</loc>
-    <lastmod>2026-03-22</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

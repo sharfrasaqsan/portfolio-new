@@ -54,9 +54,9 @@ export default function Services() {
       id: "react-nextjs-engineering",
       icon: Code2,
       title: "Custom React & Next.js Application Engineering",
-      subtitle: "Scalable Frontend Systems, TypeScript & Cloud Integrations",
+      subtitle: "Scalable Web Systems, TypeScript & Cloud Integrations",
       description:
-        "End-to-end frontend architecture for greenfield applications and SaaS products. Clean modular codebases authored with React 19, Next.js, strict TypeScript, and Tailwind CSS v4, backed by cloud storage and serverless APIs.",
+        "End-to-end web application architecture for greenfield products and SaaS platforms. Clean modular codebases authored with React 19, Next.js, strict TypeScript, and Tailwind CSS v4, backed by cloud storage and serverless APIs.",
       outcomes: [
         "Type-safe, component-driven UI architecture built for maintainability",
         "Cloudinary CDN pipelines for responsive, compressed modern media delivery",
@@ -69,11 +69,11 @@ export default function Services() {
     {
       id: "frontend-audits",
       icon: Search,
-      title: "Frontend Architecture Audits & Advisory",
+      title: "Web Architecture Audits & Advisory",
       subtitle:
         "Codebase Inspection, Bundle Reduction & Modernization Roadmaps",
       description:
-        "A rigorous, independent architectural review of your existing frontend application. I dissect bundle composition, runtime performance, dependency bloat, accessibility gaps, and security postures.",
+        "A rigorous, independent architectural review of your existing web application. I dissect bundle composition, runtime performance, dependency bloat, accessibility gaps, and security postures.",
       outcomes: [
         "Actionable, prioritized findings matrix categorized by business impact",
         "Bundle analysis identifying unneeded polyfills, heavy packages, and duplicate code",
@@ -115,17 +115,17 @@ export default function Services() {
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    serviceType: "Frontend Engineering & Technical Advisory",
+    serviceType: "Web Development & Technical Advisory",
     provider: {
       "@type": "Person",
       name: "Mohamed Sharfiras",
-      jobTitle: "Web Developer & Frontend Engineer",
+      jobTitle: "Web Developer",
       url: "https://sharfrasaqsan.vercel.app",
     },
     areaServed: "Worldwide",
     hasOfferCatalog: {
       "@type": "OfferCatalog",
-      name: "Frontend Engineering Services",
+      name: "Web Development Services",
       itemListElement: offerings.map((o) => ({
         "@type": "Offer",
         itemOffered: {
@@ -140,15 +140,15 @@ export default function Services() {
   return (
     <div className="max-w-4xl mx-auto space-y-16 pb-16">
       <Helmet>
-        <title>Engineering Services &amp; Advisory — Mohamed Sharfiras</title>
+        <title>Web Services &amp; Advisory — Mohamed Sharfiras</title>
         <meta
           name="description"
-          content="Professional frontend engineering, enterprise intranet modernization, Core Web Vitals remediation, and React/Next.js application architecture by Mohamed Sharfiras."
+          content="Professional web development, enterprise intranet modernization, Core Web Vitals remediation, and React/Next.js application architecture by Mohamed Sharfiras."
         />
         <link rel="canonical" href={canonicalUrl} />
         <meta
           property="og:title"
-          content="Engineering Services & Advisory — Mohamed Sharfiras"
+          content="Web Services & Advisory — Mohamed Sharfiras"
         />
         <meta
           property="og:description"
@@ -167,12 +167,12 @@ export default function Services() {
           Capabilities &amp; Advisory
         </p>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#171F24] dark:text-[#F1F4F6] max-w-2xl leading-tight">
-          Reliable frontend engineering for high-stakes web platforms.
+          Reliable web development &amp; engineering for high-stakes platforms.
         </h1>
         <p className="text-sm sm:text-base text-[#55626F] dark:text-[#97A3AF] leading-relaxed max-w-2xl">
           Partnering with enterprise product teams, eCommerce brands, and
-          founders to architect resilient frontend systems, resolve Core Web
-          Vitals bottlenecks, and scale search engine visibility.
+          founders to architect resilient web systems, resolve Core Web Vitals
+          bottlenecks, and scale search engine visibility.
         </p>
 
         <div className="flex flex-wrap items-center gap-3 pt-3">
@@ -332,8 +332,8 @@ export default function Services() {
             </div>
             <p className="text-[#55626F] dark:text-[#97A3AF] leading-relaxed">
               Available for <strong>project-based contracts</strong>,{" "}
-              <strong>fractional technical advisory</strong>, or{" "}
-              <strong>full-time senior frontend engineering roles</strong>.
+              <strong>freelance web development</strong>, or{" "}
+              <strong>fractional technical advisory</strong>.
             </p>
           </div>
 
@@ -354,7 +354,8 @@ export default function Services() {
           <div className="flex items-center gap-2 text-xs font-mono text-[#55626F] dark:text-[#97A3AF]">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>
-              Currently accepting Q2/Q3 2026 client projects &amp; senior roles
+              Currently accepting Q2/Q3 2026 client projects &amp; technical
+              advisory
             </span>
           </div>
 

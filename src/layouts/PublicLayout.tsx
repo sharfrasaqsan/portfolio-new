@@ -57,7 +57,7 @@ export const PublicLayout = () => {
         <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-12">
           <div className="flex justify-between items-center h-18">
             {/* Identity Brand Logo */}
-            <Logo size="md" subtitle="Web & Frontend Engineer" />
+            <Logo size="md" subtitle="Web Developer" />
 
             {/* Desktop Navigation */}
             <nav
@@ -245,7 +245,7 @@ export const PublicLayout = () => {
             </p>
             <div className="flex items-center space-x-3">
               <span className="font-mono">
-                Available for select opportunities
+                Open for consulting &amp; advisory
               </span>
               <span
                 aria-hidden="true"

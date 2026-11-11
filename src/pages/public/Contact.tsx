@@ -11,8 +11,8 @@ import {
   AlertCircle,
   Linkedin,
   Github,
-  Briefcase,
-  Building2,
+  Layers,
+  Wrench,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -24,10 +24,10 @@ import {
 const Contact = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialType =
-    searchParams.get("type") === "client" ? "client" : "recruiter";
+    searchParams.get("type") === "advisory" ? "advisory" : "project";
   const initialService = searchParams.get("service") || "";
 
-  const [inquiryType, setInquiryType] = useState<"recruiter" | "client">(
+  const [inquiryType, setInquiryType] = useState<"project" | "advisory">(
     initialType,
   );
 
@@ -35,8 +35,7 @@ const Contact = () => {
     name: "",
     email: "",
     company: "",
-    roleType: "Senior Frontend Engineer",
-    arrangement: "Remote",
+    consultationTopic: "Core Web Vitals & Performance Audit",
     service: initialService || "Enterprise Web & Intranet Modernization",
     timeline: "Immediate (Next 2-4 weeks)",
     budget: "$2,500 – $5,000",
@@ -50,8 +49,9 @@ const Contact = () => {
 
   useEffect(() => {
     const urlType = searchParams.get("type");
-    if (urlType === "client") setInquiryType("client");
-    else if (urlType === "recruiter") setInquiryType("recruiter");
+    if (urlType === "advisory") setInquiryType("advisory");
+    else if (urlType === "project" || urlType === "client")
+      setInquiryType("project");
 
     const urlService = searchParams.get("service");
     if (urlService) {
@@ -59,7 +59,7 @@ const Contact = () => {
     }
   }, [searchParams]);
 
-  const handleTypeSwitch = (type: "recruiter" | "client") => {
+  const handleTypeSwitch = (type: "project" | "advisory") => {
     setInquiryType(type);
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -100,18 +100,16 @@ const Contact = () => {
       // Build structured message summary
       const compiledDetails = [
         `[INQUIRY TYPE: ${
-          inquiryType === "client"
+          inquiryType === "project"
             ? "Client Project Engagement"
-            : "Recruiter / Team Opportunity"
+            : "Technical Advisory & Consultation"
         }]`,
         formData.company ? `Organization: ${formData.company.trim()}` : null,
-        inquiryType === "client"
+        inquiryType === "project"
           ? `Scope of Work: ${formData.service}`
-          : `Opportunity Role: ${formData.roleType}`,
-        inquiryType === "client"
-          ? `Target Timeline: ${formData.timeline}`
-          : `Work Arrangement: ${formData.arrangement}`,
-        inquiryType === "client"
+          : `Advisory Topic: ${formData.consultationTopic}`,
+        `Target Timeline: ${formData.timeline}`,
+        inquiryType === "project"
           ? `Estimated Budget: ${formData.budget}`
           : null,
         `\n--- Detailed Message ---`,
@@ -134,8 +132,7 @@ const Contact = () => {
         name: "",
         email: "",
         company: "",
-        roleType: "Senior Frontend Engineer",
-        arrangement: "Remote",
+        consultationTopic: "Core Web Vitals & Performance Audit",
         service: "Enterprise Web & Intranet Modernization",
         timeline: "Immediate (Next 2-4 weeks)",
         budget: "$2,500 – $5,000",
@@ -157,21 +154,21 @@ const Contact = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-16">
       <Helmet>
-        <title>Contact Mohamed Sharfiras — Web &amp; Frontend Engineer</title>
+        <title>Contact Mohamed Sharfiras — Web Developer</title>
         <meta
           name="description"
-          content="Discuss an enterprise intranet migration, high-performance eCommerce store, or web engineering role with Mohamed Sharfiras. Based in Colombo, Sri Lanka."
+          content="Discuss an enterprise intranet migration, high-performance web platform, or technical consultation with Mohamed Sharfiras. Based in Colombo, Sri Lanka."
         />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
         <meta
           property="og:title"
-          content="Contact Mohamed Sharfiras — Web &amp; Frontend Engineer"
+          content="Contact Mohamed Sharfiras — Web Developer"
         />
         <meta
           property="og:description"
-          content="Discuss an enterprise web migration, frontend architecture, or engineering opportunity with Mohamed Sharfiras."
+          content="Discuss an enterprise web migration, technical consultation, or client project with Mohamed Sharfiras."
         />
         <meta property="og:image" content={resolveImageUrl(null)} />
         <meta name="twitter:card" content="summary_large_image" />
@@ -191,12 +188,12 @@ const Contact = () => {
           Inquiries &amp; Collaboration
         </p>
         <h1 className="fluid-h1 font-extrabold text-[#171F24] dark:text-[#F1F4F6] tracking-tight">
-          Discuss a project or role.
+          Discuss a project or consultation.
         </h1>
         <p className="text-sm sm:text-base text-[#55626F] dark:text-[#97A3AF] max-w-2xl leading-relaxed">
-          Available for full-time frontend engineering positions, enterprise
-          intranet contracts, and performance consultations. Select your inquiry
-          type below for streamlined routing.
+          Available for specialized enterprise intranet consulting,
+          high-performance web development, and technical audits. Select your
+          inquiry type below for streamlined routing.
         </p>
       </section>
 
@@ -255,7 +252,7 @@ const Contact = () => {
                 Havelock City / Colombo, Sri Lanka
               </p>
               <p className="text-xs text-[#55626F] dark:text-[#97A3AF] mt-0.5">
-                Open to remote contracts &amp; relocation
+                Remote collaboration worldwide
               </p>
             </div>
           </div>
@@ -285,7 +282,7 @@ const Contact = () => {
           </div>
         </aside>
 
-        {/* Right Column: Accessible Form with Inquiry Selector */}
+        {/* Right Column: Accessible Form with Topic Switcher */}
         <section className="md:col-span-7">
           <form
             onSubmit={handleSubmit}
@@ -296,33 +293,33 @@ const Contact = () => {
             {/* Inquiry Journey Switcher */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#171F24] dark:text-[#F1F4F6]">
-                I am reaching out as a:
+                Inquiry Focus:
               </label>
               <div className="grid grid-cols-2 p-1 rounded-md bg-[#F2F1EC] dark:bg-[#222B33] border border-[#E5E4DE] dark:border-[#27313A]">
                 <button
                   type="button"
-                  onClick={() => handleTypeSwitch("recruiter")}
+                  onClick={() => handleTypeSwitch("project")}
                   className={`py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    inquiryType === "recruiter"
+                    inquiryType === "project"
                       ? "bg-[#FFFFFF] dark:bg-[#171F24] text-[#1F51D0] dark:text-[#4F7FF7] shadow-xs"
                       : "text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6]"
                   }`}
                 >
-                  <Briefcase className="w-3.5 h-3.5" />
-                  <span>Recruiter / Hiring Team</span>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Project / Client Build</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleTypeSwitch("client")}
+                  onClick={() => handleTypeSwitch("advisory")}
                   className={`py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    inquiryType === "client"
+                    inquiryType === "advisory"
                       ? "bg-[#FFFFFF] dark:bg-[#171F24] text-[#1F51D0] dark:text-[#4F7FF7] shadow-xs"
                       : "text-[#55626F] dark:text-[#97A3AF] hover:text-[#171F24] dark:hover:text-[#F1F4F6]"
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Client / Project Sponsor</span>
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span>Technical Advisory &amp; Audit</span>
                 </button>
               </div>
             </div>
@@ -391,7 +388,7 @@ const Contact = () => {
                     htmlFor="contact-email"
                     className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
                   >
-                    Work Email <span className="text-red-500">*</span>
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="contact-email"
@@ -416,7 +413,7 @@ const Contact = () => {
                   htmlFor="contact-company"
                   className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
                 >
-                  Company / Organization Name
+                  Organization / Brand Name
                 </label>
                 <input
                   id="contact-company"
@@ -426,79 +423,13 @@ const Contact = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, company: e.target.value })
                   }
-                  placeholder={
-                    inquiryType === "client"
-                      ? "e.g. Horizon Digital or Self"
-                      : "e.g. Acme Corporation or Recruitment Partner"
-                  }
+                  placeholder="e.g. Horizon Digital or Self"
                   className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
                 />
               </div>
 
-              {/* Dynamic Recruiter Fields */}
-              {inquiryType === "recruiter" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="contact-role"
-                      className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
-                    >
-                      Opportunity Role
-                    </label>
-                    <select
-                      id="contact-role"
-                      value={formData.roleType}
-                      onChange={(e) =>
-                        setFormData({ ...formData, roleType: e.target.value })
-                      }
-                      className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
-                    >
-                      <option value="Senior Frontend Engineer">
-                        Senior Frontend Engineer
-                      </option>
-                      <option value="Web Developer (Enterprise)">
-                        Web Developer (Enterprise / Intranet)
-                      </option>
-                      <option value="Full-stack Web Engineer">
-                        Full-stack Web Engineer
-                      </option>
-                      <option value="Contract / Fractional Consultant">
-                        Contract / Fractional Specialist
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="contact-arrangement"
-                      className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
-                    >
-                      Work Arrangement
-                    </label>
-                    <select
-                      id="contact-arrangement"
-                      value={formData.arrangement}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          arrangement: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
-                    >
-                      <option value="Remote">100% Remote</option>
-                      <option value="Hybrid (Colombo)">Hybrid (Colombo)</option>
-                      <option value="Relocation Open">
-                        Open to Relocation
-                      </option>
-                      <option value="Contract">Fixed-term Contract</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Client Fields */}
-              {inquiryType === "client" && (
+              {/* Dynamic Project Fields */}
+              {inquiryType === "project" && (
                 <>
                   <div>
                     <label
@@ -524,8 +455,8 @@ const Contact = () => {
                       <option value="Custom React & Next.js Application Engineering">
                         Custom React &amp; Next.js Application Engineering
                       </option>
-                      <option value="Frontend Architecture Audit & Advisory">
-                        Frontend Architecture Audit &amp; Advisory
+                      <option value="WordPress / Headless Web Platform">
+                        WordPress / Headless Web Platform
                       </option>
                       <option value="Other Custom Project">
                         Other Custom Engineering Requirement
@@ -589,15 +520,78 @@ const Contact = () => {
                 </>
               )}
 
+              {/* Dynamic Advisory Fields */}
+              {inquiryType === "advisory" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="contact-topic"
+                      className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
+                    >
+                      Consultation Topic
+                    </label>
+                    <select
+                      id="contact-topic"
+                      value={formData.consultationTopic}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          consultationTopic: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                    >
+                      <option value="Core Web Vitals & Performance Audit">
+                        Core Web Vitals &amp; Performance Audit
+                      </option>
+                      <option value="Frontend Architecture & Codebase Review">
+                        Frontend Architecture &amp; Code Review
+                      </option>
+                      <option value="Enterprise Intranet Migration Strategy">
+                        Enterprise Intranet Migration Strategy
+                      </option>
+                      <option value="General Technical Consultation">
+                        General Technical Consultation
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="contact-timeline-advisory"
+                      className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
+                    >
+                      Target Timeline
+                    </label>
+                    <select
+                      id="contact-timeline-advisory"
+                      value={formData.timeline}
+                      onChange={(e) =>
+                        setFormData({ ...formData, timeline: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0]"
+                    >
+                      <option value="Immediate (Next 1-2 weeks)">
+                        Immediate (Next 1-2 weeks)
+                      </option>
+                      <option value="Next 2-4 weeks">Next 2-4 weeks</option>
+                      <option value="Flexible / Exploratory">
+                        Flexible / Exploratory
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Message */}
               <div>
                 <label
                   htmlFor="contact-message"
                   className="block text-xs font-semibold text-[#171F24] dark:text-[#F1F4F6] mb-1"
                 >
-                  {inquiryType === "client"
+                  {inquiryType === "project"
                     ? "Project Summary & Requirements"
-                    : "Role Context & Requirements"}{" "}
+                    : "Consultation Details & Questions"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -611,9 +605,9 @@ const Contact = () => {
                     setFormData({ ...formData, message: e.target.value })
                   }
                   placeholder={
-                    inquiryType === "client"
+                    inquiryType === "project"
                       ? "Briefly describe your website, technical challenges (e.g. Core Web Vitals, migration goals), and any existing infrastructure..."
-                      : "Describe your team structure, tech stack, salary/rate range, and key engineering expectations..."
+                      : "Describe your technical questions, codebase details, or specific architectural advisory requirements..."
                   }
                   className="w-full px-3.5 py-2.5 rounded-md border border-[#E5E4DE] dark:border-[#27313A] bg-[#FBFBFA] dark:bg-[#13171B] text-[#171F24] dark:text-[#F1F4F6] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F51D0] resize-none"
                 />
@@ -633,9 +627,9 @@ const Contact = () => {
               ) : (
                 <>
                   <span>
-                    {inquiryType === "client"
+                    {inquiryType === "project"
                       ? "Submit Project Consultation Request"
-                      : "Send Opportunity Message"}
+                      : "Send Advisory Request"}
                   </span>
                   <Send className="w-3.5 h-3.5" aria-hidden="true" />
                 </>

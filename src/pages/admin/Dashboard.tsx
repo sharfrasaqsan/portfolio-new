@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { INITIAL_BLOGS } from "../../data/blogsData";
 import {
   collection,
   getDocs,
@@ -102,7 +103,7 @@ const Dashboard = () => {
           ]);
 
         setProjectCount(pSnap.size);
-        setBlogCount(bSnap.size);
+        setBlogCount(Math.max(bSnap.size, INITIAL_BLOGS.length));
 
         if (globalSnap.exists()) {
           setTotalViews(globalSnap.data()?.totalViews ?? 0);

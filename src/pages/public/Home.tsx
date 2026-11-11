@@ -91,7 +91,7 @@ const Home = () => {
   return (
     <div className="space-y-20 md:space-y-28">
       <Helmet>
-        <title>Mohamed Sharfiras — Web Developer &amp; Frontend Engineer</title>
+        <title>Mohamed Sharfiras — Web Developer</title>
         <meta
           name="description"
           content="Portfolio of Mohamed Sharfiras, a Web Developer with 4+ years of professional experience across enterprise web migrations (HSBC), high-performance eCommerce (Oscar Wylee), React, Next.js, and Technical SEO."
@@ -99,10 +99,7 @@ const Home = () => {
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
-        <meta
-          property="og:title"
-          content="Mohamed Sharfiras — Web Developer &amp; Frontend Engineer"
-        />
+        <meta property="og:title" content="Mohamed Sharfiras — Web Developer" />
         <meta
           property="og:description"
           content="Engineering reliable web platforms, enterprise intranets, and high-converting eCommerce. 4+ years across React, Next.js, WordPress, SharePoint, and Technical SEO."
@@ -111,7 +108,7 @@ const Home = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content="Mohamed Sharfiras — Web Developer &amp; Frontend Engineer"
+          content="Mohamed Sharfiras — Web Developer"
         />
         <meta
           name="twitter:description"
@@ -133,7 +130,9 @@ const Home = () => {
                 className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
                 aria-hidden="true"
               />
-              <span>Available for Select Engineering Roles</span>
+              <span>
+                Web Developer &bull; Available for Advisory &amp; Projects
+              </span>
             </div>
 
             <h1 className="fluid-hero font-extrabold text-[#171F24] dark:text-[#F1F4F6] tracking-tight leading-[1.08]">
@@ -520,7 +519,7 @@ const Home = () => {
               <Zap className="w-4 h-4" aria-hidden="true" />
             </div>
             <h3 className="text-base font-bold text-[#171F24] dark:text-[#F1F4F6]">
-              Frontend Engineering
+              Modern Web Development
             </h3>
             <p className="text-xs sm:text-sm text-[#55626F] dark:text-[#97A3AF] leading-relaxed">
               Modular applications in React 19, Next.js, and TypeScript,
@@ -622,11 +621,11 @@ const Home = () => {
       <section className="rounded-lg border border-[#E5E4DE] dark:border-[#27313A] bg-[#FFFFFF] dark:bg-[#1B2228] p-8 sm:p-10 space-y-4 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:space-y-0 shadow-2xs">
         <div className="space-y-1 max-w-xl">
           <h2 className="text-xl sm:text-2xl font-bold text-[#171F24] dark:text-[#F1F4F6]">
-            Discuss a project, team role, or migration.
+            Discuss a project, migration, or technical consultation.
           </h2>
           <p className="text-xs sm:text-sm text-[#55626F] dark:text-[#97A3AF]">
-            Open to full-time enterprise engineering roles, specialized
-            contracting, and technical consulting.
+            Available for specialized intranet consulting, client projects, and
+            technical advisory.
           </p>
         </div>
 

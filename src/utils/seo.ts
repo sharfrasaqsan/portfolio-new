@@ -69,7 +69,7 @@ export const buildPersonSchema = () => ({
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: "Mohamed Sharfiras Portfolio",
-      description: "Portfolio of Mohamed Sharfiras, Web & Frontend Engineer",
+      description: "Portfolio of Mohamed Sharfiras, Web Developer",
       publisher: {
         "@id": `${SITE_URL}/#person`,
       },

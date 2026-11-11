@@ -37,24 +37,38 @@ const projectTitles = {
 
 // Known blog titles mapping for static metadata
 const blogTitles = {
-  "Ckh6CeqiqDYeywtEx6TT": "WordPress vs Custom Development: What I Actually Use for Client Projects in 2026",
-  "PMEpikraHow948AXehE4": "How I Build High-Converting Websites as a Developer, Not Just a Designer",
-  "RZ7k1CJZIHsbelpeEDxf": "From Static Website to Full System: How I Add Automation to My Web Projects",
-  "Z4TtwbJlpi5LWfmyg9ob": "Why Most Business Websites Fail in 2026 (And How to Fix Yours Fast)",
-  "sJiJUF6nHiXqldWQwmYC": "How I Build Fast, SEO-Optimized Websites Using HTML, WordPress & Modern Tools",
-  "sxP5sfpjgQT36gyq1r3W": "7 Frontend Mistakes That Are Killing Your Website Performance (And How to Fix Them)",
+  "core-web-vitals-ecommerce-optimization":
+    "Deconstructing Core Web Vitals: How We Cut LCP from 4.2s to 1.1s on High-Traffic eCommerce",
+  "zero-spam-resilient-client-forms":
+    "Building Bulletproof Client Forms: Webhooks, Honeypots, and CRM Sync Without Annoying Users",
+  "nextjs-app-router-vs-vite-spa":
+    "Next.js App Router vs Vite SPA in 2026: A Practical Architecture Decision Matrix",
+  "enterprise-intranet-migration-lessons":
+    "Lessons from Enterprise Intranet Migrations: Governance, Zero Downtime, and Managing 1,000+ Internal Pages",
+  "Ckh6CeqiqDYeywtEx6TT":
+    "WordPress vs Custom Development: What I Actually Use for Client Projects in 2026",
+  "PMEpikraHow948AXehE4":
+    "How I Build High-Converting Websites as a Developer, Not Just a Designer",
+  "RZ7k1CJZIHsbelpeEDxf":
+    "From Static Website to Full System: How I Add Automation to My Web Projects",
+  "Z4TtwbJlpi5LWfmyg9ob":
+    "Why Most Business Websites Fail in 2026 (And How to Fix Yours Fast)",
+  "sJiJUF6nHiXqldWQwmYC":
+    "How I Build Fast, SEO-Optimized Websites Using HTML, WordPress & Modern Tools",
+  "sxP5sfpjgQT36gyq1r3W":
+    "7 Frontend Mistakes That Are Killing Your Website Performance (And How to Fix Them)",
 };
 
 const baseRoutes = [
   {
     path: "/",
-    title: "Mohamed Sharfiras — Web Developer & Frontend Engineer",
+    title: "Mohamed Sharfiras — Web Developer",
     description:
       "Portfolio of Mohamed Sharfiras, a Web Developer with 4+ years of professional experience in enterprise web migrations (HSBC), high-performance eCommerce (Oscar Wylee), React, Next.js, and Technical SEO.",
   },
   {
     path: "/about",
-    title: "About Mohamed Sharfiras — Web & Frontend Engineer",
+    title: "About Mohamed Sharfiras — Web Developer",
     description:
       "Professional background of Mohamed Sharfiras: 4+ years of experience across enterprise intranet migrations (HSBC), high-traffic eCommerce (Oscar Wylee), React, Next.js, and Technical SEO.",
   },
@@ -72,7 +86,7 @@ const baseRoutes = [
   },
   {
     path: "/services",
-    title: "Engineering Services & Advisory | Mohamed Sharfiras",
+    title: "Web Services & Advisory | Mohamed Sharfiras",
     description:
       "Enterprise web migrations, Core Web Vitals remediation, and high-performance React/Next.js application engineering by Mohamed Sharfiras.",
   },
@@ -84,9 +98,9 @@ const baseRoutes = [
   },
   {
     path: "/contact",
-    title: "Contact Mohamed Sharfiras — Web & Frontend Engineer",
+    title: "Contact Mohamed Sharfiras — Web Developer",
     description:
-      "Discuss an enterprise intranet migration, high-performance eCommerce store, or web engineering role with Mohamed Sharfiras. Based in Colombo, Sri Lanka.",
+      "Discuss an enterprise intranet migration, high-performance web project, or technical consultation with Mohamed Sharfiras. Based in Colombo, Sri Lanka.",
   },
 ];
 
